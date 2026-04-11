@@ -14,6 +14,8 @@ import {
   PropertyFieldListPickerOrderBy
 } from '@pnp/spfx-property-controls';
 
+import { Logger, LogLevel, ConsoleListener } from '@pnp/logging';
+
 import DataDemo from './components/DataDemo';
 import { IDataDemoProps } from './components/IDataDemoProps';
 import { SpServiceFactory } from './services/SpServiceFactory';
@@ -47,6 +49,11 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
   }
 
   protected onInit(): Promise<void> {
+    Logger.subscribe(ConsoleListener('DataDemo'));
+    Logger.activeLogLevel = LogLevel.Warning;
+
+    Logger.write('Web part initialized', LogLevel.Info);
+
     this._factory = new SpServiceFactory(this.context);
     return Promise.resolve();
   }

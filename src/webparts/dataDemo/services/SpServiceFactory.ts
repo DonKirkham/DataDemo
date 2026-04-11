@@ -4,6 +4,7 @@
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { spfi, SPFx as spSPFx } from '@pnp/sp';
 import { graphfi, SPFx as graphSPFx } from '@pnp/graph';
+import { Logger, LogLevel } from '@pnp/logging';
 import { ISpService } from './ISpService';
 import { RestSpService } from './RestSpService';
 import { PnPSpService } from './PnPSpService';
@@ -21,6 +22,7 @@ export class SpServiceFactory {
   constructor(private context: WebPartContext) {}
 
   public async create(serviceType: ServiceType): Promise<ISpService> {
+    Logger.write(`Creating service: ${serviceType}`, LogLevel.Info);
     switch (serviceType) {
       case ServiceType.REST:
         return new RestSpService(

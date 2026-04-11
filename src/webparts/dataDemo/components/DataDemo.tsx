@@ -7,6 +7,7 @@ import type { IDataDemoProps } from './IDataDemoProps';
 import { IListItem } from '../models/IListItem';
 import { ISpService } from '../services/ISpService';
 import { ServiceType } from '../services/SpServiceFactory';
+import { Logger, LogLevel } from '@pnp/logging';
 import {
   DetailsList,
   DetailsListLayoutMode,
@@ -80,6 +81,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     const { items, loading, error, showDialog, editItem, isEditing, serviceType, service } = this.state;
 
     if (!service || !list) {
+      Logger.write('Web part not configured: missing site or list selection', LogLevel.Warning);
       return (
         <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
           <MessageBar messageBarType={MessageBarType.info} data-automation-id="dataDemo-message-configure">
@@ -233,6 +235,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         this._loadItems().catch(() => { /* handled in _loadItems */ });
       });
     } catch (err) {
+      Logger.error(err as Error);
       this.setState({
         loading: false,
         error: `Failed to initialize service: ${(err as Error).message}`
@@ -253,6 +256,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       const items = await service.getItems(list);
       this.setState({ items, loading: false });
     } catch (err) {
+      Logger.error(err as Error);
       this.setState({
         loading: false,
         error: `Failed to load items: ${(err as Error).message}`
@@ -298,6 +302,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       }
       await this._loadItems();
     } catch (err) {
+      Logger.error(err as Error);
       this.setState({
         loading: false,
         error: `Failed to save item: ${(err as Error).message}`
@@ -318,6 +323,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       await service.deleteItem(list, id);
       await this._loadItems();
     } catch (err) {
+      Logger.error(err as Error);
       this.setState({
         loading: false,
         error: `Failed to delete item: ${(err as Error).message}`
