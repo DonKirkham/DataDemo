@@ -1,0 +1,17 @@
+/* ABOUTME: Styles for the DataDemo component. */
+/* ABOUTME: Provides layout and spacing for the CRUD table interface. */
+
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.dataDemo {
+  overflow: hidden;
+  padding: 20px;
+  color: "[theme:bodyText, default: #323130]";
+  color: var(--bodyText);
+
+  h2 {
+    margin: 0 0 16px 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(pnpm add:*)",
+      "Read(//c/Users/DonKirkham/AppData/Local/fnm_multishells/**)",
+      "Bash(/c/Users/DonKirkham/.fnm/bin/fnm.exe list:*)",
+      "Read(//c/Users/DonKirkham/**)",
+      "Read(//c/Users/DonKirkham/scoop/shims/**)",
+      "Read(//d/code/.demo/data/node_modules/@pnp/**)",
+      "Bash(xargs grep:*)",
+      "Read(//d//**)",
+      "Bash(grep -E \"\\\\.\\(d\\\\.ts|js\\)$\")"
+    ]
+  }
+}
