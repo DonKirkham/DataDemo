@@ -83,8 +83,6 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     return (
       <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
         <Stack tokens={stackTokens}>
-          <h2 data-automation-id="dataDemo-text-heading">Data Demo</h2>
-
           <div className={styles.pivotWrapper}>
             <Pivot
               selectedKey={transport}

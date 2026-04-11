@@ -9,16 +9,15 @@
   color: "[theme:bodyText, default: #323130]";
   color: var(--bodyText);
 
-  h2 {
-    margin: 0 0 16px 0;
-    font-size: 20px;
-    font-weight: 600;
-    text-align: center;
-  }
-
   .pivotWrapper {
     display: flex;
     justify-content: center;
+
+    :global(.ms-Pivot-link.is-selected) {
+      background-color: "[theme:themeLighterAlt, default: #eff6fc]";
+      background-color: var(--themeLighterAlt, #eff6fc);
+      border-radius: 4px 4px 0 0;
+    }
   }
 }
 
