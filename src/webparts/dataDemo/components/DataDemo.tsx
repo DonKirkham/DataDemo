@@ -85,26 +85,30 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         <Stack tokens={stackTokens}>
           <h2 data-automation-id="dataDemo-text-heading">Data Demo</h2>
 
-          <Pivot
-            selectedKey={transport}
-            onLinkClick={this._onTransportChanged}
-            data-automation-id="dataDemo-pivot-transport"
-          >
-            <PivotItem headerText="REST" itemKey="REST" />
-            <PivotItem headerText="PnPjs" itemKey="PnPjs" />
-          </Pivot>
+          <div className={styles.pivotWrapper}>
+            <Pivot
+              selectedKey={transport}
+              onLinkClick={this._onTransportChanged}
+              data-automation-id="dataDemo-pivot-transport"
+            >
+              <PivotItem headerText="REST" itemKey="REST" />
+              <PivotItem headerText="PnPjs" itemKey="PnPjs" />
+            </Pivot>
+          </div>
 
-          <Pivot
-            selectedKey={endpoint}
-            onLinkClick={this._onEndpointChanged}
-            data-automation-id="dataDemo-pivot-endpoint"
-          >
-            <PivotItem headerText="SharePoint" itemKey="SharePoint" />
-            <PivotItem headerText="MS Graph" itemKey="MS Graph" />
-            <PivotItem headerText="Anonymous" itemKey="Anonymous" />
-            <PivotItem headerText="Simple Auth" itemKey="Simple Auth" />
-            <PivotItem headerText="Entra App" itemKey="Entra App" />
-          </Pivot>
+          <div className={styles.pivotWrapper}>
+            <Pivot
+              selectedKey={endpoint}
+              onLinkClick={this._onEndpointChanged}
+              data-automation-id="dataDemo-pivot-endpoint"
+            >
+              <PivotItem headerText="SharePoint" itemKey="SharePoint" />
+              <PivotItem headerText="MS Graph" itemKey="MS Graph" />
+              <PivotItem headerText="Anonymous" itemKey="Anonymous" />
+              <PivotItem headerText="Simple Auth" itemKey="Simple Auth" />
+              <PivotItem headerText="Entra App" itemKey="Entra App" />
+            </Pivot>
+          </div>
 
           {PLACEHOLDER_ENDPOINTS.indexOf(endpoint) >= 0
             ? this._renderPlaceholder()
