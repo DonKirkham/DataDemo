@@ -14,8 +14,8 @@
     justify-content: center;
 
     :global(.ms-Pivot-link.is-selected) {
-      background-color: "[theme:themeLighterAlt, default: #eff6fc]";
-      background-color: var(--themeLighterAlt, #eff6fc);
+      background-color: "[theme:themeLighterAlt, default: #faf4f1]";
+      background-color: var(--themeLighterAlt, #faf4f1);
       border-radius: 4px 4px 0 0;
     }
   }
