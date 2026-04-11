@@ -77,6 +77,14 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
     Logger.subscribe(ConsoleListener('DataDemo'));
     Logger.activeLogLevel = this.properties.enhancedLogging ? LogLevel.Verbose : LogLevel.Warning;
 
+    if (!this.properties.sites || this.properties.sites.length === 0) {
+      this.properties.sites = [{
+        url: this.context.pageContext.web.absoluteUrl,
+        title: this.context.pageContext.web.title,
+        id: this.context.pageContext.site.id.toString()
+      }];
+    }
+
     Logger.write('Web part initialized', LogLevel.Info);
 
     this._factory = new SpServiceFactory(this.context);
@@ -133,6 +141,7 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
                 PropertyFieldListPicker('list', {
                   label: 'Select a list',
                   selectedList: this.properties.list?.id,
+                  disabled: !this._getSiteUrl(),
                   includeHidden: false,
                   includeListTitleAndUrl: true,
                   orderBy: PropertyFieldListPickerOrderBy.Title,
@@ -170,6 +179,11 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
 
   protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
     super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
+
+    if (propertyPath === 'sites') {
+      this.properties.list = undefined;
+      this.context.propertyPane.refresh();
+    }
 
     if (propertyPath === 'enhancedLogging') {
       Logger.activeLogLevel = newValue ? LogLevel.Verbose : LogLevel.Warning;
