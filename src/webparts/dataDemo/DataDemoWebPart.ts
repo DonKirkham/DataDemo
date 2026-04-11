@@ -58,12 +58,14 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
       return;
     }
 
+    const site = this.properties.sites[0];
     const listIdentifier: IListIdentifier = { id: list.id, title: list.title };
 
     const element: React.ReactElement<IDataDemoProps> = React.createElement(
       DataDemo,
       {
         factory: this._factory,
+        site: { url: site.url || '', id: site.id || '' },
         list: listIdentifier
       }
     );

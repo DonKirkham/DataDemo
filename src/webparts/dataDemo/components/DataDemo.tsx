@@ -71,7 +71,11 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
   }
 
   public componentDidUpdate(prevProps: IDataDemoProps): void {
-    if (prevProps.list?.id !== this.props.list?.id || prevProps.factory !== this.props.factory) {
+    if (
+      prevProps.list?.id !== this.props.list?.id ||
+      prevProps.site?.id !== this.props.site?.id ||
+      prevProps.factory !== this.props.factory
+    ) {
       this._initServiceAndLoad().catch(() => { /* handled internally */ });
     }
   }
@@ -216,10 +220,10 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
   }
 
   private async _initServiceAndLoad(): Promise<void> {
-    const { factory, list } = this.props;
+    const { factory, site, list } = this.props;
     const { serviceType } = this.state;
 
-    if (!factory || !list) {
+    if (!factory || !site || !list) {
       this.setState({ service: undefined, items: [] });
       return;
     }
@@ -227,7 +231,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     this.setState({ loading: true, error: undefined });
 
     try {
-      const service = await factory.create(serviceType);
+      const service = await factory.create(serviceType, site);
       this.setState({ service }, () => {
         this._loadItems().catch(() => { /* handled in _loadItems */ });
       });

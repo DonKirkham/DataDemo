@@ -18,35 +18,38 @@ export enum ServiceType {
   PnPGraph = 'PnP Graph'
 }
 
+export interface ISiteInfo {
+  url: string;
+  id: string;
+}
+
 export class SpServiceFactory {
   constructor(private context: WebPartContext) {}
 
-  public async create(serviceType: ServiceType): Promise<ISpService> {
-    Logger.write(`Creating service: ${serviceType}`, LogLevel.Info);
+  public async create(serviceType: ServiceType, site: ISiteInfo): Promise<ISpService> {
+    Logger.write(`Creating service: ${serviceType} for site: ${site.url}`, LogLevel.Info);
     switch (serviceType) {
       case ServiceType.REST:
         return new RestSpService(
           this.context.spHttpClient,
-          this.context.pageContext.web.absoluteUrl
+          site.url
         );
 
       case ServiceType.PnPSP: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sp = spfi().using(spSPFx(this.context as any));
+        const sp = spfi(site.url).using(spSPFx(this.context as any));
         return new PnPSpService(sp);
       }
 
       case ServiceType.Graph: {
         const graphClient = await this.context.msGraphClientFactory.getClient('3');
-        const siteId = this.context.pageContext.site.id.toString();
-        return new GraphSpService(graphClient, siteId);
+        return new GraphSpService(graphClient, site.id);
       }
 
       case ServiceType.PnPGraph: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const graph = graphfi().using(graphSPFx(this.context as any));
-        const siteId = this.context.pageContext.site.id.toString();
-        return new PnPGraphService(graph, siteId);
+        return new PnPGraphService(graph, site.id);
       }
 
       default:
