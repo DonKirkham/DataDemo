@@ -9,7 +9,6 @@ interface IGraphListItem {
   id: string;
   fields: {
     Title?: string;
-    Description?: string;
   };
 }
 
@@ -22,14 +21,13 @@ export class GraphSpService implements ISpService {
   private toListItem(graphItem: IGraphListItem): IListItem {
     return {
       Id: parseInt(graphItem.id, 10),
-      Title: graphItem.fields.Title || '',
-      Description: graphItem.fields.Description
+      Title: graphItem.fields.Title || ''
     };
   }
 
   public async getItems(list: IListIdentifier): Promise<IListItem[]> {
     const response = await this.graphClient
-      .api(`/sites/${this.siteId}/lists/${list.id}/items?expand=fields(select=Title,Description)`)
+      .api(`/sites/${this.siteId}/lists/${list.id}/items?expand=fields(select=Title)`)
       .version('v1.0')
       .get();
 
@@ -38,7 +36,7 @@ export class GraphSpService implements ISpService {
 
   public async getItem(list: IListIdentifier, itemId: number): Promise<IListItem> {
     const response = await this.graphClient
-      .api(`/sites/${this.siteId}/lists/${list.id}/items/${itemId}?expand=fields(select=Title,Description)`)
+      .api(`/sites/${this.siteId}/lists/${list.id}/items/${itemId}?expand=fields(select=Title)`)
       .version('v1.0')
       .get();
 
@@ -51,8 +49,7 @@ export class GraphSpService implements ISpService {
       .version('v1.0')
       .post({
         fields: {
-          Title: item.Title,
-          Description: item.Description
+          Title: item.Title
         }
       });
 
@@ -64,8 +61,7 @@ export class GraphSpService implements ISpService {
       .api(`/sites/${this.siteId}/lists/${list.id}/items/${itemId}/fields`)
       .version('v1.0')
       .patch({
-        Title: item.Title,
-        Description: item.Description
+        Title: item.Title
       });
 
     return { ...item, Id: itemId };

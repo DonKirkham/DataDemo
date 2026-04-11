@@ -12,7 +12,7 @@ export class RestSpService implements ISpService {
   ) {}
 
   public async getItems(list: IListIdentifier): Promise<IListItem[]> {
-    const url = `${this.siteUrl}/_api/web/lists/getbytitle('${list.title}')/items?$select=Id,Title,Description`;
+    const url = `${this.siteUrl}/_api/web/lists/getbytitle('${list.title}')/items?$select=Id,Title`;
     const response: SPHttpClientResponse = await this.spHttpClient.get(
       url,
       SPHttpClient.configurations.v1
@@ -27,7 +27,7 @@ export class RestSpService implements ISpService {
   }
 
   public async getItem(list: IListIdentifier, itemId: number): Promise<IListItem> {
-    const url = `${this.siteUrl}/_api/web/lists/getbytitle('${list.title}')/items(${itemId})?$select=Id,Title,Description`;
+    const url = `${this.siteUrl}/_api/web/lists/getbytitle('${list.title}')/items(${itemId})?$select=Id,Title`;
     const response: SPHttpClientResponse = await this.spHttpClient.get(
       url,
       SPHttpClient.configurations.v1
@@ -44,8 +44,7 @@ export class RestSpService implements ISpService {
     const url = `${this.siteUrl}/_api/web/lists/getbytitle('${list.title}')/items`;
     const options: ISPHttpClientOptions = {
       body: JSON.stringify({
-        Title: item.Title,
-        Description: item.Description
+        Title: item.Title
       })
     };
 
@@ -70,8 +69,7 @@ export class RestSpService implements ISpService {
         'X-HTTP-Method': 'MERGE'
       },
       body: JSON.stringify({
-        Title: item.Title,
-        Description: item.Description
+        Title: item.Title
       })
     };
 

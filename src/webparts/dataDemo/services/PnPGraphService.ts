@@ -10,7 +10,6 @@ import { ISpService, IListIdentifier } from './ISpService';
 
 interface IGraphFields {
   Title?: string;
-  Description?: string;
   id?: string;
 }
 
@@ -31,8 +30,7 @@ export class PnPGraphService implements ISpService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return items.map((item: any) => ({
       Id: parseInt(item.id, 10),
-      Title: (item.fields as IGraphFields)?.Title || '',
-      Description: (item.fields as IGraphFields)?.Description
+      Title: (item.fields as IGraphFields)?.Title || ''
     }));
   }
 
@@ -49,8 +47,7 @@ export class PnPGraphService implements ISpService {
     const fields = (item as any).fields as IGraphFields;
     return {
       Id: itemId,
-      Title: fields?.Title || '',
-      Description: fields?.Description
+      Title: fields?.Title || ''
     };
   }
 
@@ -63,12 +60,11 @@ export class PnPGraphService implements ISpService {
       .getById(list.id)
       .items
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .add({ fields: { Title: item.Title, Description: item.Description } } as any);
+      .add({ fields: { Title: item.Title } } as any);
 
     return {
       Id: parseInt(result.id, 10),
-      Title: item.Title,
-      Description: item.Description
+      Title: item.Title
     };
   }
 
@@ -80,7 +76,7 @@ export class PnPGraphService implements ISpService {
       .items
       .getById(itemId.toString())
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ fields: { Title: item.Title, Description: item.Description } } as any);
+      .update({ fields: { Title: item.Title } } as any);
 
     return { ...item, Id: itemId };
   }

@@ -15,7 +15,7 @@ export class PnPSpService implements ISpService {
     return await this.sp.web.lists
       .getByTitle(list.title)
       .items
-      .select('Id', 'Title', 'Description')() as IListItem[];
+      .select('Id', 'Title')() as IListItem[];
   }
 
   public async getItem(list: IListIdentifier, itemId: number): Promise<IListItem> {
@@ -23,7 +23,7 @@ export class PnPSpService implements ISpService {
       .getByTitle(list.title)
       .items
       .getById(itemId)
-      .select('Id', 'Title', 'Description')() as IListItem;
+      .select('Id', 'Title')() as IListItem;
   }
 
   public async createItem(list: IListIdentifier, item: IListItem): Promise<IListItem> {
@@ -31,8 +31,7 @@ export class PnPSpService implements ISpService {
       .getByTitle(list.title)
       .items
       .add({
-        Title: item.Title,
-        Description: item.Description
+        Title: item.Title
       });
 
     return result.data as IListItem;
@@ -44,8 +43,7 @@ export class PnPSpService implements ISpService {
       .items
       .getById(itemId)
       .update({
-        Title: item.Title,
-        Description: item.Description
+        Title: item.Title
       });
 
     return { ...item, Id: itemId };

@@ -58,7 +58,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       loading: false,
       error: undefined,
       showDialog: false,
-      editItem: { Title: '', Description: '' },
+      editItem: { Title: '' },
       isEditing: false,
       serviceType: ServiceType.REST,
       service: undefined
@@ -91,8 +91,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
     const columns: IColumn[] = [
       { key: 'Id', name: 'ID', fieldName: 'Id', minWidth: 40, maxWidth: 60, isResizable: true },
-      { key: 'Title', name: 'Title', fieldName: 'Title', minWidth: 100, maxWidth: 200, isResizable: true },
-      { key: 'Description', name: 'Description', fieldName: 'Description', minWidth: 150, maxWidth: 300, isResizable: true },
+      { key: 'Title', name: 'Title', fieldName: 'Title', minWidth: 100, maxWidth: 300, isResizable: true },
       {
         key: 'actions',
         name: 'Actions',
@@ -189,14 +188,6 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
               required
               data-automation-id="dataDemo-input-title"
             />
-            <TextField
-              label="Description"
-              value={editItem.Description || ''}
-              onChange={(_e, val) => this.setState({ editItem: { ...editItem, Description: val || '' } })}
-              multiline
-              rows={3}
-              data-automation-id="dataDemo-input-description"
-            />
           </Stack>
           <DialogFooter>
             <PrimaryButton
@@ -272,7 +263,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
   private _onAddItem = (): void => {
     this.setState({
       showDialog: true,
-      editItem: { Title: '', Description: '' },
+      editItem: { Title: '' },
       isEditing: false
     });
   }
