@@ -7,7 +7,7 @@ import type { IDataDemoProps } from './IDataDemoProps';
 import { IListItem } from '../models/IListItem';
 import { ISpService } from '../services/ISpService';
 import { ServiceType } from '../services/SpServiceFactory';
-import { Logger, LogLevel } from '@pnp/logging';
+import { Logger } from '@pnp/logging';
 import {
   DetailsList,
   DetailsListLayoutMode,
@@ -81,12 +81,9 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     const { items, loading, error, showDialog, editItem, isEditing, serviceType, service } = this.state;
 
     if (!service || !list) {
-      Logger.write('Web part not configured: missing site or list selection', LogLevel.Warning);
       return (
         <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
-          <MessageBar messageBarType={MessageBarType.info} data-automation-id="dataDemo-message-configure">
-            Please configure a site and list in the property pane.
-          </MessageBar>
+          <Spinner size={SpinnerSize.large} label="Initializing..." data-automation-id="dataDemo-spinner-init" />
         </div>
       );
     }

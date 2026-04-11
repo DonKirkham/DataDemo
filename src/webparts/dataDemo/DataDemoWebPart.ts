@@ -19,6 +19,8 @@ import {
 
 import { Logger, LogLevel, ConsoleListener } from '@pnp/logging';
 
+import { Placeholder } from '@pnp/spfx-controls-react';
+
 import DataDemo from './components/DataDemo';
 import { IDataDemoProps } from './components/IDataDemoProps';
 import { SpServiceFactory } from './services/SpServiceFactory';
@@ -42,8 +44,21 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
 
   public render(): void {
     const list = this.properties.list;
-    const listIdentifier: IListIdentifier | undefined =
-      list ? { id: list.id, title: list.title } : undefined;
+    const hasSite = this.properties.sites && this.properties.sites.length > 0;
+
+    if (!hasSite || !list) {
+      const element = React.createElement(Placeholder, {
+        iconName: 'Edit',
+        iconText: 'Configure Data Demo',
+        description: 'Select a site and list in the property pane to get started.',
+        buttonLabel: 'Configure',
+        onConfigure: () => this.context.propertyPane.open()
+      });
+      ReactDom.render(element, this.domElement);
+      return;
+    }
+
+    const listIdentifier: IListIdentifier = { id: list.id, title: list.title };
 
     const element: React.ReactElement<IDataDemoProps> = React.createElement(
       DataDemo,
