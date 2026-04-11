@@ -15,3 +15,20 @@
     font-weight: 600;
   }
 }
+
+.placeholder {
+  padding: 40px 20px;
+  text-align: center;
+  color: "[theme:bodySubtext, default: #605e5c]";
+  color: var(--bodyText);
+
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+  }
+}

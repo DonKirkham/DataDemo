@@ -11,12 +11,8 @@ import { PnPSpService } from './PnPSpService';
 import { GraphSpService } from './GraphSpService';
 import { PnPGraphService } from './PnPGraphService';
 
-export enum ServiceType {
-  REST = 'REST',
-  PnPSP = 'PnP SP',
-  Graph = 'MS Graph',
-  PnPGraph = 'PnP Graph'
-}
+export type Transport = 'REST' | 'PnPjs';
+export type Endpoint = 'SharePoint' | 'MS Graph' | 'Anonymous' | 'Simple Auth' | 'Entra App';
 
 export interface ISiteInfo {
   url: string;
@@ -26,34 +22,30 @@ export interface ISiteInfo {
 export class SpServiceFactory {
   constructor(private context: WebPartContext) {}
 
-  public async create(serviceType: ServiceType, site: ISiteInfo): Promise<ISpService> {
-    Logger.write(`Creating service: ${serviceType} for site: ${site.url}`, LogLevel.Info);
-    switch (serviceType) {
-      case ServiceType.REST:
-        return new RestSpService(
-          this.context.spHttpClient,
-          site.url
-        );
+  public async create(transport: Transport, endpoint: Endpoint, site: ISiteInfo): Promise<ISpService> {
+    Logger.write(`Creating service: ${transport} + ${endpoint} for site: ${site.url}`, LogLevel.Info);
 
-      case ServiceType.PnPSP: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sp = spfi(site.url).using(spSPFx(this.context as any));
-        return new PnPSpService(sp);
-      }
-
-      case ServiceType.Graph: {
-        const graphClient = await this.context.msGraphClientFactory.getClient('3');
-        return new GraphSpService(graphClient, site.id);
-      }
-
-      case ServiceType.PnPGraph: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const graph = graphfi().using(graphSPFx(this.context as any));
-        return new PnPGraphService(graph, site.id);
-      }
-
-      default:
-        throw new Error(`Unknown service type: ${serviceType}`);
+    if (transport === 'REST' && endpoint === 'SharePoint') {
+      return new RestSpService(this.context.spHttpClient, site.url);
     }
+
+    if (transport === 'REST' && endpoint === 'MS Graph') {
+      const graphClient = await this.context.msGraphClientFactory.getClient('3');
+      return new GraphSpService(graphClient, site.id);
+    }
+
+    if (transport === 'PnPjs' && endpoint === 'SharePoint') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sp = spfi(site.url).using(spSPFx(this.context as any));
+      return new PnPSpService(sp);
+    }
+
+    if (transport === 'PnPjs' && endpoint === 'MS Graph') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const graph = graphfi().using(graphSPFx(this.context as any));
+      return new PnPGraphService(graph, site.id);
+    }
+
+    throw new Error(`Unsupported combination: ${transport} + ${endpoint}`);
   }
 }
