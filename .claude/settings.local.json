@@ -10,7 +10,9 @@
       "Read(//d/code/.demo/data/node_modules/@pnp/**)",
       "Bash(xargs grep:*)",
       "Read(//d//**)",
-      "Bash(grep -E \"\\\\.\\(d\\\\.ts|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(d\\\\.ts|js\\)$\")",
+      "Bash(rm package-lock.json)",
+      "Bash(rm -rf node_modules)"
     ]
   }
 }
