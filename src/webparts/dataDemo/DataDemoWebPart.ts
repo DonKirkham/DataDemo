@@ -4,7 +4,10 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
-import { type IPropertyPaneConfiguration } from '@microsoft/sp-property-pane';
+import {
+  type IPropertyPaneConfiguration,
+  PropertyPaneToggle
+} from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import {
@@ -25,6 +28,7 @@ export interface IDataDemoWebPartProps {
   sites: IPropertyFieldSite[];
   list: string;
   listTitle: string;
+  enhancedLogging: boolean;
 }
 
 export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebPartProps> {
@@ -50,7 +54,7 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
 
   protected onInit(): Promise<void> {
     Logger.subscribe(ConsoleListener('DataDemo'));
-    Logger.activeLogLevel = LogLevel.Warning;
+    Logger.activeLogLevel = this.properties.enhancedLogging ? LogLevel.Verbose : LogLevel.Warning;
 
     Logger.write('Web part initialized', LogLevel.Info);
 
@@ -124,6 +128,23 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
               ]
             }
           ]
+        },
+        {
+          header: {
+            description: 'Advanced settings for the web part.'
+          },
+          groups: [
+            {
+              groupName: 'Logging',
+              groupFields: [
+                PropertyPaneToggle('enhancedLogging', {
+                  label: 'Enhanced logging',
+                  onText: 'On',
+                  offText: 'Off'
+                })
+              ]
+            }
+          ]
         }
       ]
     };
@@ -131,6 +152,11 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
 
   protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
     super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
+
+    if (propertyPath === 'enhancedLogging') {
+      Logger.activeLogLevel = newValue ? LogLevel.Verbose : LogLevel.Warning;
+      Logger.write(`Enhanced logging ${newValue ? 'enabled' : 'disabled'}`, LogLevel.Info);
+    }
 
     // When list picker returns an object with includeListTitleAndUrl, extract the title
     if (propertyPath === 'list' && newValue && typeof newValue === 'object') {
