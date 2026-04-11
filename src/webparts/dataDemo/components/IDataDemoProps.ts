@@ -1,11 +1,10 @@
 // ABOUTME: Props interface for the DataDemo component.
-// ABOUTME: Receives the active service and list identifier from the web part.
+// ABOUTME: Receives the service factory and list identifier from the web part.
 
-import { ISpService, IListIdentifier } from '../services/ISpService';
-import { ServiceType } from '../services/SpServiceFactory';
+import { IListIdentifier } from '../services/ISpService';
+import { SpServiceFactory } from '../services/SpServiceFactory';
 
 export interface IDataDemoProps {
-  service: ISpService | undefined;
+  factory: SpServiceFactory | undefined;
   list: IListIdentifier | undefined;
-  serviceType: ServiceType;
 }

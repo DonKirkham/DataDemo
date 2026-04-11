@@ -1,10 +1,12 @@
 // ABOUTME: Main component for the DataDemo web part displaying a CRUD table.
-// ABOUTME: Allows creating, editing, and deleting list items using the selected service implementation.
+// ABOUTME: Allows creating, editing, and deleting list items, with a runtime service type switcher.
 
 import * as React from 'react';
 import styles from './DataDemo.module.scss';
 import type { IDataDemoProps } from './IDataDemoProps';
 import { IListItem } from '../models/IListItem';
+import { ISpService } from '../services/ISpService';
+import { ServiceType } from '../services/SpServiceFactory';
 import {
   DetailsList,
   DetailsListLayoutMode,
@@ -22,7 +24,9 @@ import {
   IconButton,
   Dialog,
   DialogType,
-  DialogFooter
+  DialogFooter,
+  Dropdown,
+  IDropdownOption
 } from '@fluentui/react';
 
 interface IDataDemoState {
@@ -32,9 +36,18 @@ interface IDataDemoState {
   showDialog: boolean;
   editItem: IListItem;
   isEditing: boolean;
+  serviceType: ServiceType;
+  service: ISpService | undefined;
 }
 
 const stackTokens: IStackTokens = { childrenGap: 10 };
+
+const serviceTypeOptions: IDropdownOption[] = [
+  { key: ServiceType.REST, text: ServiceType.REST },
+  { key: ServiceType.PnPSP, text: ServiceType.PnPSP },
+  { key: ServiceType.Graph, text: ServiceType.Graph },
+  { key: ServiceType.PnPGraph, text: ServiceType.PnPGraph }
+];
 
 export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoState> {
 
@@ -46,32 +59,31 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       error: undefined,
       showDialog: false,
       editItem: { Title: '', Description: '' },
-      isEditing: false
+      isEditing: false,
+      serviceType: ServiceType.REST,
+      service: undefined
     };
   }
 
   public componentDidMount(): void {
-    this._loadItems().catch(() => { /* handled in _loadItems */ });
+    this._initServiceAndLoad().catch(() => { /* handled internally */ });
   }
 
   public componentDidUpdate(prevProps: IDataDemoProps): void {
-    if (
-      prevProps.list?.id !== this.props.list?.id ||
-      prevProps.serviceType !== this.props.serviceType
-    ) {
-      this._loadItems().catch(() => { /* handled in _loadItems */ });
+    if (prevProps.list?.id !== this.props.list?.id || prevProps.factory !== this.props.factory) {
+      this._initServiceAndLoad().catch(() => { /* handled internally */ });
     }
   }
 
   public render(): React.ReactElement<IDataDemoProps> {
-    const { service, list, serviceType } = this.props;
-    const { items, loading, error, showDialog, editItem, isEditing } = this.state;
+    const { list } = this.props;
+    const { items, loading, error, showDialog, editItem, isEditing, serviceType, service } = this.state;
 
     if (!service || !list) {
       return (
         <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
           <MessageBar messageBarType={MessageBarType.info} data-automation-id="dataDemo-message-configure">
-            Please configure a site, list, and service type in the property pane.
+            Please configure a site and list in the property pane.
           </MessageBar>
         </div>
       );
@@ -110,9 +122,17 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     return (
       <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
         <Stack tokens={stackTokens}>
-          <h2 data-automation-id="dataDemo-text-heading">
-            Data Demo &mdash; {serviceType}
-          </h2>
+          <Stack horizontal tokens={stackTokens} verticalAlign="end">
+            <h2 data-automation-id="dataDemo-text-heading">Data Demo</h2>
+            <Dropdown
+              label="Service"
+              selectedKey={serviceType}
+              options={serviceTypeOptions}
+              onChange={this._onServiceTypeChanged}
+              styles={{ dropdown: { minWidth: 150 } }}
+              data-automation-id="dataDemo-dropdown-serviceType"
+            />
+          </Stack>
 
           {error && (
             <MessageBar
@@ -195,8 +215,43 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     );
   }
 
+  private _onServiceTypeChanged = (_event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption): void => {
+    if (!option) {
+      return;
+    }
+    const newType = option.key as ServiceType;
+    this.setState({ serviceType: newType }, () => {
+      this._initServiceAndLoad().catch(() => { /* handled internally */ });
+    });
+  }
+
+  private async _initServiceAndLoad(): Promise<void> {
+    const { factory, list } = this.props;
+    const { serviceType } = this.state;
+
+    if (!factory || !list) {
+      this.setState({ service: undefined, items: [] });
+      return;
+    }
+
+    this.setState({ loading: true, error: undefined });
+
+    try {
+      const service = await factory.create(serviceType);
+      this.setState({ service }, () => {
+        this._loadItems().catch(() => { /* handled in _loadItems */ });
+      });
+    } catch (err) {
+      this.setState({
+        loading: false,
+        error: `Failed to initialize service: ${(err as Error).message}`
+      });
+    }
+  }
+
   private async _loadItems(): Promise<void> {
-    const { service, list } = this.props;
+    const { list } = this.props;
+    const { service } = this.state;
     if (!service || !list) {
       return;
     }
@@ -235,8 +290,8 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
   }
 
   private _onSaveItem = async (): Promise<void> => {
-    const { service, list } = this.props;
-    const { editItem, isEditing } = this.state;
+    const { list } = this.props;
+    const { service, editItem, isEditing } = this.state;
 
     if (!service || !list) {
       return;
@@ -260,7 +315,8 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
   }
 
   private _onDeleteItem = async (id: number): Promise<void> => {
-    const { service, list } = this.props;
+    const { list } = this.props;
+    const { service } = this.state;
     if (!service || !list) {
       return;
     }

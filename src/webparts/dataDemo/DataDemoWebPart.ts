@@ -1,13 +1,10 @@
 // ABOUTME: DataDemo web part entry point with PnP property pane controls for site and list selection.
-// ABOUTME: Creates a service factory and passes the selected ISpService implementation to the React component.
+// ABOUTME: Passes a service factory to the React component, which handles service switching at runtime.
 
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
-import {
-  type IPropertyPaneConfiguration,
-  PropertyPaneDropdown
-} from '@microsoft/sp-property-pane';
+import { type IPropertyPaneConfiguration } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import {
@@ -19,24 +16,20 @@ import {
 
 import DataDemo from './components/DataDemo';
 import { IDataDemoProps } from './components/IDataDemoProps';
-import { SpServiceFactory, ServiceType } from './services/SpServiceFactory';
-import { ISpService, IListIdentifier } from './services/ISpService';
+import { SpServiceFactory } from './services/SpServiceFactory';
+import { IListIdentifier } from './services/ISpService';
 
 export interface IDataDemoWebPartProps {
   sites: IPropertyFieldSite[];
   list: string;
   listTitle: string;
-  serviceType: ServiceType;
 }
 
 export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebPartProps> {
 
-  private _service: ISpService | undefined;
   private _factory: SpServiceFactory | undefined;
 
-  public async render(): Promise<void> {
-    await this._initService();
-
+  public render(): void {
     const listIdentifier: IListIdentifier | undefined =
       this.properties.list && this.properties.listTitle
         ? { id: this.properties.list, title: this.properties.listTitle }
@@ -45,30 +38,17 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
     const element: React.ReactElement<IDataDemoProps> = React.createElement(
       DataDemo,
       {
-        service: this._service,
-        list: listIdentifier,
-        serviceType: this.properties.serviceType || ServiceType.REST
+        factory: this._factory,
+        list: listIdentifier
       }
     );
 
     ReactDom.render(element, this.domElement);
   }
 
-  protected async onInit(): Promise<void> {
+  protected onInit(): Promise<void> {
     this._factory = new SpServiceFactory(this.context);
-
-    if (!this.properties.serviceType) {
-      this.properties.serviceType = ServiceType.REST;
-    }
-  }
-
-  private async _initService(): Promise<void> {
-    if (!this._factory) {
-      return;
-    }
-
-    const serviceType = this.properties.serviceType || ServiceType.REST;
-    this._service = await this._factory.create(serviceType);
+    return Promise.resolve();
   }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
@@ -105,7 +85,7 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
       pages: [
         {
           header: {
-            description: 'Configure the data source and service implementation.'
+            description: 'Configure the data source for the web part.'
           },
           groups: [
             {
@@ -135,21 +115,6 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
                   key: 'listPickerFieldId'
                 })
               ]
-            },
-            {
-              groupName: 'Service Implementation',
-              groupFields: [
-                PropertyPaneDropdown('serviceType', {
-                  label: 'Service approach',
-                  options: [
-                    { key: ServiceType.REST, text: ServiceType.REST },
-                    { key: ServiceType.PnPSP, text: ServiceType.PnPSP },
-                    { key: ServiceType.Graph, text: ServiceType.Graph },
-                    { key: ServiceType.PnPGraph, text: ServiceType.PnPGraph }
-                  ],
-                  selectedKey: this.properties.serviceType || ServiceType.REST
-                })
-              ]
             }
           ]
         }
@@ -172,6 +137,6 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
       }
     }
 
-    this.render().catch(() => { /* handled in render */ });
+    this.render();
   }
 }
