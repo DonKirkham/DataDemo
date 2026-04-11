@@ -24,10 +24,15 @@ import { IDataDemoProps } from './components/IDataDemoProps';
 import { SpServiceFactory } from './services/SpServiceFactory';
 import { IListIdentifier } from './services/ISpService';
 
+export interface IStoredList {
+  id: string;
+  title: string;
+  url?: string;
+}
+
 export interface IDataDemoWebPartProps {
   sites: IPropertyFieldSite[];
-  list: string;
-  listTitle: string;
+  list: IStoredList | undefined;
   enhancedLogging: boolean;
 }
 
@@ -36,10 +41,9 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
   private _factory: SpServiceFactory | undefined;
 
   public render(): void {
+    const list = this.properties.list;
     const listIdentifier: IListIdentifier | undefined =
-      this.properties.list && this.properties.listTitle
-        ? { id: this.properties.list, title: this.properties.listTitle }
-        : undefined;
+      list ? { id: list.id, title: list.title } : undefined;
 
     const element: React.ReactElement<IDataDemoProps> = React.createElement(
       DataDemo,
@@ -85,10 +89,7 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
 
   private _getSiteUrl(): string | undefined {
     const sites = this.properties.sites;
-    if (sites && sites.length > 0) {
-      return sites[0].url;
-    }
-    return undefined;
+    return sites && sites.length > 0 ? sites[0].url : undefined;
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -114,7 +115,7 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
                 }),
                 PropertyFieldListPicker('list', {
                   label: 'Select a list',
-                  selectedList: this.properties.list,
+                  selectedList: this.properties.list?.id,
                   includeHidden: false,
                   includeListTitleAndUrl: true,
                   orderBy: PropertyFieldListPickerOrderBy.Title,
@@ -158,16 +159,15 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
       Logger.write(`Enhanced logging ${newValue ? 'enabled' : 'disabled'}`, LogLevel.Info);
     }
 
-    // When list picker returns an object with includeListTitleAndUrl, extract the title
+    // includeListTitleAndUrl returns an IPropertyFieldList object — store it directly
     if (propertyPath === 'list' && newValue && typeof newValue === 'object') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const listObj = newValue as any;
-      if (listObj.title) {
-        this.properties.listTitle = listObj.title;
-      }
-      if (listObj.id) {
-        this.properties.list = listObj.id;
-      }
+      this.properties.list = {
+        id: listObj.id,
+        title: listObj.title || '',
+        url: listObj.url
+      };
     }
 
     this.render();
