@@ -2,10 +2,28 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Clean page w/ debug",
+      "type": "msedge",
+      "request": "launch",
+      "url": "https://pdslabs2.sharepoint.com/sites/devc/sitepages/dev.aspx?debugManifestsFile=https%3A%2F%2Flocalhost%3A4321%2Ftemp%2Fbuild%2Fmanifests.js&debug=true&noredir=true",
+      "webRoot": "${workspaceRoot}",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///.././src/*": "${webRoot}/src/*",
+        "webpack:///../../../src/*": "${webRoot}/src/*",
+        "webpack:///../../../../src/*": "${webRoot}/src/*",
+        "webpack:///../../../../../src/*": "${webRoot}/src/*"
+      },
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "-incognito"
+      ]
+    },
+        {
       "name": "Hosted workbench",
       "type": "msedge",
       "request": "launch",
-      "url": "https://{tenantDomain}/_layouts/workbench.aspx",
+      "url": "https://pdslabs2.sharepoint.com/sites/devc/_layouts/workbench.aspx",
       "webRoot": "${workspaceRoot}",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
@@ -19,5 +37,6 @@
         "-incognito"
       ]
     }
+
   ]
 }
