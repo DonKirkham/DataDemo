@@ -2,7 +2,7 @@
 // ABOUTME: Demonstrates PnPjs composable pipeline for public endpoints without SharePoint context.
 
 import { Queryable } from '@pnp/queryable';
-import { BrowserFetch, JSONParse } from '@pnp/queryable';
+import { BrowserFetch, JSONParse, ResolveOnData, RejectOnError } from '@pnp/queryable';
 import { IListItem } from '../models/IListItem';
 import { ISpService, IListIdentifier } from './ISpService';
 
@@ -19,7 +19,7 @@ export class AnonymousPnPService implements ISpService {
 
   private createQueryable(path: string): Queryable {
     const q = new Queryable(`${API_BASE}/${path}`);
-    q.using(BrowserFetch(), JSONParse());
+    q.using(BrowserFetch(), RejectOnError(), ResolveOnData(), JSONParse());
     return q;
   }
 
