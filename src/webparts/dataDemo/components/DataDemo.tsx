@@ -44,7 +44,7 @@ interface IDataDemoState {
 
 const stackTokens: IStackTokens = { childrenGap: 10 };
 
-const PLACEHOLDER_ENDPOINTS: Endpoint[] = ['Anonymous', 'Simple Auth', 'Entra App'];
+const PLACEHOLDER_ENDPOINTS: Endpoint[] = ['Simple Auth', 'Entra App'];
 
 export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoState> {
 
@@ -131,9 +131,10 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
   private _renderCrudPanel(): React.ReactElement {
     const { list } = this.props;
-    const { items, loading, error, showDialog, editItem, isEditing, service } = this.state;
+    const { items, loading, error, showDialog, editItem, isEditing, service, endpoint } = this.state;
+    const isReadOnly = endpoint === 'Anonymous';
 
-    if (!service || !list) {
+    if (!service || (!isReadOnly && !list)) {
       return (
         <Spinner size={SpinnerSize.large} label="Initializing..." data-automation-id="dataDemo-spinner-init" />
       );
@@ -142,7 +143,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     const columns: IColumn[] = [
       { key: 'Id', name: 'ID', fieldName: 'Id', minWidth: 40, maxWidth: 60, isResizable: true },
       { key: 'Title', name: 'Title', fieldName: 'Title', minWidth: 100, maxWidth: 300, isResizable: true },
-      {
+      ...(!isReadOnly ? [{
         key: 'actions',
         name: 'Actions',
         minWidth: 80,
@@ -165,7 +166,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
             />
           </Stack>
         )
-      }
+      }] : [])
     ];
 
     return (
@@ -181,12 +182,14 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         )}
 
         <Stack horizontal tokens={stackTokens}>
-          <PrimaryButton
-            text="Add Item"
-            iconProps={{ iconName: 'Add' }}
-            onClick={this._onAddItem}
-            data-automation-id="dataDemo-button-add"
-          />
+          {!isReadOnly && (
+            <PrimaryButton
+              text="Add Item"
+              iconProps={{ iconName: 'Add' }}
+              onClick={this._onAddItem}
+              data-automation-id="dataDemo-button-add"
+            />
+          )}
           <DefaultButton
             text="Refresh"
             iconProps={{ iconName: 'Refresh' }}
@@ -265,8 +268,9 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
   private async _initServiceAndLoad(): Promise<void> {
     const { factory, site, list } = this.props;
     const { transport, endpoint } = this.state;
+    const isAnonymous = endpoint === 'Anonymous';
 
-    if (!factory || !site || !list) {
+    if (!factory || (!isAnonymous && (!site || !list))) {
       this.setState({ service: undefined, items: [] });
       return;
     }
@@ -274,7 +278,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     this.setState({ loading: true, error: undefined });
 
     try {
-      const service = await factory.create(transport, endpoint, site);
+      const service = await factory.create(transport, endpoint, site ?? { url: '', id: '' });
       this.setState({ service }, () => {
         this._loadItems().catch(() => { /* handled in _loadItems */ });
       });
@@ -289,15 +293,16 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
   private async _loadItems(): Promise<void> {
     const { list } = this.props;
-    const { service } = this.state;
-    if (!service || !list) {
+    const { service, endpoint } = this.state;
+    const isAnonymous = endpoint === 'Anonymous';
+    if (!service || (!isAnonymous && !list)) {
       return;
     }
 
     this.setState({ loading: true, error: undefined });
 
     try {
-      const items = await service.getItems(list);
+      const items = await service.getItems(list ?? { title: '', id: '' });
       this.setState({ items, loading: false });
     } catch (err) {
       Logger.error(err as Error);

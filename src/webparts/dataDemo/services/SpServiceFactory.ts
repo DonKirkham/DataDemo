@@ -10,6 +10,8 @@ import { RestSpService } from './RestSpService';
 import { PnPSpService } from './PnPSpService';
 import { GraphSpService } from './GraphSpService';
 import { PnPGraphService } from './PnPGraphService';
+import { AnonymousRestService } from './AnonymousRestService';
+import { AnonymousPnPService } from './AnonymousPnPService';
 
 export type Transport = 'REST' | 'PnPjs';
 export type Endpoint = 'SharePoint' | 'MS Graph' | 'Anonymous' | 'Simple Auth' | 'Entra App';
@@ -44,6 +46,14 @@ export class SpServiceFactory {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const graph = graphfi().using(graphSPFx(this.context as any));
       return new PnPGraphService(graph, site.id);
+    }
+
+    if (transport === 'REST' && endpoint === 'Anonymous') {
+      return new AnonymousRestService(this.context.httpClient);
+    }
+
+    if (transport === 'PnPjs' && endpoint === 'Anonymous') {
+      return new AnonymousPnPService();
     }
 
     throw new Error(`Unsupported combination: ${transport} + ${endpoint}`);
