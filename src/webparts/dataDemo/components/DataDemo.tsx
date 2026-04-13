@@ -40,6 +40,7 @@ interface IDataDemoState {
   transport: Transport;
   endpoint: Endpoint;
   service: ISpService | undefined;
+  showPunchline: boolean;
 }
 
 const stackTokens: IStackTokens = { childrenGap: 10 };
@@ -47,6 +48,7 @@ const stackTokens: IStackTokens = { childrenGap: 10 };
 const PLACEHOLDER_ENDPOINTS: Endpoint[] = ['Simple Auth', 'Entra App'];
 
 export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoState> {
+  private _punchlineTimer: number | undefined;
 
   constructor(props: IDataDemoProps) {
     super(props);
@@ -59,7 +61,8 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       isEditing: false,
       transport: 'REST',
       endpoint: 'SharePoint',
-      service: undefined
+      service: undefined,
+      showPunchline: false
     };
   }
 
@@ -74,6 +77,12 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       prevProps.factory !== this.props.factory
     ) {
       this._initServiceAndLoad().catch(() => { /* handled internally */ });
+    }
+  }
+
+  public componentWillUnmount(): void {
+    if (this._punchlineTimer) {
+      window.clearTimeout(this._punchlineTimer);
     }
   }
 
@@ -110,7 +119,9 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
           {PLACEHOLDER_ENDPOINTS.indexOf(endpoint) >= 0
             ? this._renderPlaceholder()
-            : this._renderCrudPanel()
+            : endpoint === 'Anonymous'
+              ? this._renderJokePanel()
+              : this._renderCrudPanel()
           }
         </Stack>
       </div>
@@ -129,12 +140,73 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     );
   }
 
+  private _renderJokePanel(): React.ReactElement {
+    const { items, loading, error, service, showPunchline } = this.state;
+    const setup = items.length > 0 ? items[0].Title : '';
+    const punchline = items.length > 1 ? items[1].Title : '';
+
+    if (!service) {
+      return (
+        <Spinner size={SpinnerSize.large} label="Initializing..." data-automation-id="dataDemo-spinner-init" />
+      );
+    }
+
+    return (
+      <>
+        {error && (
+          <MessageBar
+            messageBarType={MessageBarType.error}
+            onDismiss={() => this.setState({ error: undefined })}
+            data-automation-id="dataDemo-message-error"
+          >
+            {error}
+          </MessageBar>
+        )}
+
+        <div className={styles.jokePanel} data-automation-id="dataDemo-container-joke">
+          {loading ? (
+            <Spinner size={SpinnerSize.large} label="Fetching joke..." data-automation-id="dataDemo-spinner-loading" />
+          ) : (
+            <>
+              <div className={styles.jokeSetup} data-automation-id="dataDemo-text-setup">{setup}</div>
+              {showPunchline && (
+                <div className={styles.jokePunchline} data-automation-id="dataDemo-text-punchline">{punchline}</div>
+              )}
+            </>
+          )}
+        </div>
+
+        <Stack horizontalAlign="center">
+          <DefaultButton
+            text="Next Joke"
+            iconProps={{ iconName: 'Refresh' }}
+            onClick={() => this._loadJoke()}
+            data-automation-id="dataDemo-button-nextjoke"
+          />
+        </Stack>
+      </>
+    );
+  }
+
+  private _loadJoke(): void {
+    if (this._punchlineTimer) {
+      window.clearTimeout(this._punchlineTimer);
+      this._punchlineTimer = undefined;
+    }
+    this.setState({ showPunchline: false });
+
+    this._loadItems().then(() => {
+      this._punchlineTimer = window.setTimeout(() => {
+        this.setState({ showPunchline: true });
+      }, 3000);
+    }).catch(() => { /* handled in _loadItems */ });
+  }
+
   private _renderCrudPanel(): React.ReactElement {
     const { list } = this.props;
-    const { items, loading, error, showDialog, editItem, isEditing, service, endpoint } = this.state;
-    const isReadOnly = endpoint === 'Anonymous';
+    const { items, loading, error, showDialog, editItem, isEditing, service } = this.state;
 
-    if (!service || (!isReadOnly && !list)) {
+    if (!service || !list) {
       return (
         <Spinner size={SpinnerSize.large} label="Initializing..." data-automation-id="dataDemo-spinner-init" />
       );
@@ -143,7 +215,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     const columns: IColumn[] = [
       { key: 'Id', name: 'ID', fieldName: 'Id', minWidth: 40, maxWidth: 60, isResizable: true },
       { key: 'Title', name: 'Title', fieldName: 'Title', minWidth: 100, maxWidth: 300, isResizable: true },
-      ...(!isReadOnly ? [{
+      {
         key: 'actions',
         name: 'Actions',
         minWidth: 80,
@@ -166,7 +238,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
             />
           </Stack>
         )
-      }] : [])
+      }
     ];
 
     return (
@@ -182,14 +254,12 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         )}
 
         <Stack horizontal tokens={stackTokens}>
-          {!isReadOnly && (
-            <PrimaryButton
-              text="Add Item"
-              iconProps={{ iconName: 'Add' }}
-              onClick={this._onAddItem}
-              data-automation-id="dataDemo-button-add"
-            />
-          )}
+          <PrimaryButton
+            text="Add Item"
+            iconProps={{ iconName: 'Add' }}
+            onClick={this._onAddItem}
+            data-automation-id="dataDemo-button-add"
+          />
           <DefaultButton
             text="Refresh"
             iconProps={{ iconName: 'Refresh' }}
@@ -280,7 +350,11 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
     try {
       const service = await factory.create(transport, endpoint, site ?? { url: '', id: '' });
       this.setState({ service }, () => {
-        this._loadItems().catch(() => { /* handled in _loadItems */ });
+        if (isAnonymous) {
+          this._loadJoke();
+        } else {
+          this._loadItems().catch(() => { /* handled in _loadItems */ });
+        }
       });
     } catch (err) {
       Logger.error(err as Error);

@@ -24,12 +24,12 @@ export class AnonymousPnPService implements ISpService {
   }
 
   public async getItems(_list: IListIdentifier): Promise<IListItem[]> {
-    const q = this.createQueryable('random_ten');
-    const jokes: IJokeResponse[] = await q();
-    return jokes.map((joke) => ({
-      Id: joke.id,
-      Title: `${joke.setup} — ${joke.punchline}`
-    }));
+    const q = this.createQueryable('random_joke');
+    const joke: IJokeResponse = await q();
+    return [
+      { Id: joke.id, Title: joke.setup },
+      { Id: joke.id, Title: joke.punchline }
+    ];
   }
 
   public async getItem(_list: IListIdentifier, _itemId: number): Promise<IListItem> {

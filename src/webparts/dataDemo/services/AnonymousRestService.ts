@@ -19,19 +19,19 @@ export class AnonymousRestService implements ISpService {
 
   public async getItems(_list: IListIdentifier): Promise<IListItem[]> {
     const response: HttpClientResponse = await this.httpClient.get(
-      `${API_BASE}/random_ten`,
+      `${API_BASE}/random_joke`,
       HttpClient.configurations.v1
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch jokes: ${response.statusText}`);
+      throw new Error(`Failed to fetch joke: ${response.statusText}`);
     }
 
-    const jokes: IJokeResponse[] = await response.json();
-    return jokes.map((joke) => ({
-      Id: joke.id,
-      Title: `${joke.setup} — ${joke.punchline}`
-    }));
+    const joke: IJokeResponse = await response.json();
+    return [
+      { Id: joke.id, Title: joke.setup },
+      { Id: joke.id, Title: joke.punchline }
+    ];
   }
 
   public async getItem(_list: IListIdentifier, _itemId: number): Promise<IListItem> {

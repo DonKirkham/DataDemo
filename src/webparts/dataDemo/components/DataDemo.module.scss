@@ -21,6 +21,28 @@
   }
 }
 
+.jokePanel {
+  padding: 40px 20px;
+  text-align: center;
+
+  .jokeSetup {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: "[theme:bodyText, default: #323130]";
+    color: var(--bodyText);
+  }
+
+  .jokePunchline {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: "[theme:themePrimary, default: #0078d4]";
+    color: var(--themePrimary);
+  }
+}
+
 .placeholder {
   padding: 40px 20px;
   text-align: center;
