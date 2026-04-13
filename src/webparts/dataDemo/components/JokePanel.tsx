@@ -88,7 +88,7 @@ const JokePanel: React.FC<IJokePanelProps> = ({ service }) => {
       </div>
 
       {showPunchline && (
-        <Stack horizontalAlign="center">
+        <Stack horizontalAlign="center" className={styles.nextButton}>
           <DefaultButton
             text="Next Joke"
             iconProps={{ iconName: 'Refresh' }}

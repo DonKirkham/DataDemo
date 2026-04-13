@@ -96,11 +96,14 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
       return;
     }
 
-    const { semanticColors } = currentTheme;
+    const { semanticColors, palette } = currentTheme;
     if (semanticColors) {
       this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
       this.domElement.style.setProperty('--link', semanticColors.link || null);
       this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
+    }
+    if (palette) {
+      this.domElement.style.setProperty('--themePrimary', palette.themePrimary || null);
     }
   }
 
