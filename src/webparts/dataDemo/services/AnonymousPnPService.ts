@@ -20,6 +20,14 @@ export class AnonymousPnPService implements ISpService {
   private createQueryable(path: string): Queryable {
     const q = new Queryable(`${API_BASE}/${path}`);
     q.using(BrowserFetch(), RejectOnError(), ResolveOnData(), JSONParse());
+    // Strip PnPjs tracking header to avoid CORS preflight on external APIs
+    q.on.pre(async (url, init, result) => {
+      const headers = init.headers as Record<string, string> | undefined;
+      if (headers) {
+        delete headers['X-PnPjs-RequestId'];
+      }
+      return [url, init, result];
+    });
     return q;
   }
 
