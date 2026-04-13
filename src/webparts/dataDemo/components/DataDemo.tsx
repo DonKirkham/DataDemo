@@ -101,15 +101,21 @@ const DataDemo: React.FC<IDataDemoProps> = ({ factory, site, list }) => {
   const onTransportChanged = React.useCallback((item?: PivotItem): void => {
     if (!item) return;
     const newTransport = item.props.itemKey as Transport;
-    setService(undefined);
-    setTransport(newTransport);
+    setTransport((prev) => {
+      if (prev === newTransport) return prev;
+      setService(undefined);
+      return newTransport;
+    });
   }, []);
 
   const onEndpointChanged = React.useCallback((item?: PivotItem): void => {
     if (!item) return;
     const newEndpoint = item.props.itemKey as Endpoint;
-    setService(undefined);
-    setEndpoint(newEndpoint);
+    setEndpoint((prev) => {
+      if (prev === newEndpoint) return prev;
+      setService(undefined);
+      return newEndpoint;
+    });
   }, []);
 
   // React to transport/endpoint state changes
