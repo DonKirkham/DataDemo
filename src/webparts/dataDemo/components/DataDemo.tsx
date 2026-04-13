@@ -31,97 +31,144 @@ import {
   PivotItem
 } from '@fluentui/react';
 
-interface IDataDemoState {
-  items: IListItem[];
-  loading: boolean;
-  error: string | undefined;
-  showDialog: boolean;
-  editItem: IListItem;
-  isEditing: boolean;
-  transport: Transport;
-  endpoint: Endpoint;
-  service: ISpService | undefined;
-}
-
 const stackTokens: IStackTokens = { childrenGap: 10 };
 
 const PLACEHOLDER_ENDPOINTS: Endpoint[] = ['Simple Auth', 'Entra App'];
 
-export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoState> {
+const DataDemo: React.FC<IDataDemoProps> = ({ factory, site, list }) => {
+  const [items, setItems] = React.useState<IListItem[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | undefined>(undefined);
+  const [showDialog, setShowDialog] = React.useState(false);
+  const [editItem, setEditItem] = React.useState<IListItem>({ Title: '' });
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [transport, setTransport] = React.useState<Transport>('REST');
+  const [endpoint, setEndpoint] = React.useState<Endpoint>('SharePoint');
+  const [service, setService] = React.useState<ISpService | undefined>(undefined);
 
-  constructor(props: IDataDemoProps) {
-    super(props);
-    this.state = {
-      items: [],
-      loading: false,
-      error: undefined,
-      showDialog: false,
-      editItem: { Title: '' },
-      isEditing: false,
-      transport: 'REST',
-      endpoint: 'SharePoint',
-      service: undefined
-    };
-  }
+  const isAnonymous = endpoint === 'Anonymous';
 
-  public componentDidMount(): void {
-    this._initServiceAndLoad().catch(() => { /* handled internally */ });
-  }
+  const loadItems = React.useCallback(async (svc: ISpService, lst: typeof list): Promise<void> => {
+    setLoading(true);
+    setError(undefined);
 
-  public componentDidUpdate(prevProps: IDataDemoProps): void {
-    if (
-      prevProps.list?.id !== this.props.list?.id ||
-      prevProps.site?.id !== this.props.site?.id ||
-      prevProps.factory !== this.props.factory
-    ) {
-      this._initServiceAndLoad().catch(() => { /* handled internally */ });
+    try {
+      const result = await svc.getItems(lst ?? { title: '', id: '' });
+      setItems(result);
+      setLoading(false);
+    } catch (err) {
+      Logger.error(err as Error);
+      setLoading(false);
+      setError(`Failed to load items: ${(err as Error).message}`);
     }
-  }
+  }, []);
 
-  public render(): React.ReactElement<IDataDemoProps> {
-    const { transport, endpoint } = this.state;
+  const initServiceAndLoad = React.useCallback(async (
+    t: Transport, ep: Endpoint, f: typeof factory, s: typeof site, l: typeof list
+  ): Promise<void> => {
+    const anon = ep === 'Anonymous';
 
-    return (
-      <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
-        <Stack tokens={stackTokens}>
-          <div className={styles.pivotWrapper}>
-            <Pivot
-              selectedKey={transport}
-              onLinkClick={this._onTransportChanged}
-              data-automation-id="dataDemo-pivot-transport"
-            >
-              <PivotItem headerText="REST" itemKey="REST" />
-              <PivotItem headerText="PnPjs" itemKey="PnPjs" />
-            </Pivot>
-          </div>
+    if (!f || (!anon && (!s || !l))) {
+      setService(undefined);
+      setItems([]);
+      return;
+    }
 
-          <div className={styles.pivotWrapper}>
-            <Pivot
-              selectedKey={endpoint}
-              onLinkClick={this._onEndpointChanged}
-              data-automation-id="dataDemo-pivot-endpoint"
-            >
-              <PivotItem headerText="SharePoint" itemKey="SharePoint" />
-              <PivotItem headerText="MS Graph" itemKey="MS Graph" />
-              <PivotItem headerText="Anonymous" itemKey="Anonymous" />
-              <PivotItem headerText="Simple Auth" itemKey="Simple Auth" />
-              <PivotItem headerText="Entra App" itemKey="Entra App" />
-            </Pivot>
-          </div>
+    setLoading(true);
+    setError(undefined);
 
-          {PLACEHOLDER_ENDPOINTS.indexOf(endpoint) >= 0
-            ? this._renderPlaceholder()
-            : endpoint === 'Anonymous' && this.state.service
-              ? <JokePanel service={this.state.service} />
-              : this._renderCrudPanel()
-          }
-        </Stack>
-      </div>
-    );
-  }
+    try {
+      const svc = await f.create(t, ep, s ?? { url: '', id: '' });
+      setService(svc);
+      setLoading(false);
+      if (!anon) {
+        await loadItems(svc, l);
+      }
+    } catch (err) {
+      Logger.error(err as Error);
+      setLoading(false);
+      setError(`Failed to initialize service: ${(err as Error).message}`);
+    }
+  }, [loadItems]);
 
-  private _renderPlaceholder(): React.ReactElement {
-    const { endpoint } = this.state;
+  // Initialize on mount and when props change
+  React.useEffect(() => {
+    initServiceAndLoad(transport, endpoint, factory, site, list)
+      .catch(() => { /* handled internally */ });
+  }, [factory, site?.id, list?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-initialize when transport or endpoint changes
+  const onTransportChanged = React.useCallback((item?: PivotItem): void => {
+    if (!item) return;
+    const newTransport = item.props.itemKey as Transport;
+    setTransport(newTransport);
+  }, []);
+
+  const onEndpointChanged = React.useCallback((item?: PivotItem): void => {
+    if (!item) return;
+    const newEndpoint = item.props.itemKey as Endpoint;
+    setEndpoint(newEndpoint);
+  }, []);
+
+  // React to transport/endpoint state changes
+  React.useEffect(() => {
+    if (PLACEHOLDER_ENDPOINTS.indexOf(endpoint) >= 0) return;
+    initServiceAndLoad(transport, endpoint, factory, site, list)
+      .catch(() => { /* handled internally */ });
+  }, [transport, endpoint]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onAddItem = React.useCallback((): void => {
+    setShowDialog(true);
+    setEditItem({ Title: '' });
+    setIsEditing(false);
+  }, []);
+
+  const onEditItem = React.useCallback((item: IListItem): void => {
+    setShowDialog(true);
+    setEditItem({ ...item });
+    setIsEditing(true);
+  }, []);
+
+  const onCloseDialog = React.useCallback((): void => {
+    setShowDialog(false);
+  }, []);
+
+  const onSaveItem = React.useCallback(async (): Promise<void> => {
+    if (!service || !list) return;
+
+    setShowDialog(false);
+    setLoading(true);
+
+    try {
+      if (isEditing && editItem.Id) {
+        await service.updateItem(list, editItem.Id, editItem);
+      } else {
+        await service.createItem(list, editItem);
+      }
+      await loadItems(service, list);
+    } catch (err) {
+      Logger.error(err as Error);
+      setLoading(false);
+      setError(`Failed to save item: ${(err as Error).message}`);
+    }
+  }, [service, list, isEditing, editItem, loadItems]);
+
+  const onDeleteItem = React.useCallback(async (id: number): Promise<void> => {
+    if (!service || !list) return;
+
+    setLoading(true);
+
+    try {
+      await service.deleteItem(list, id);
+      await loadItems(service, list);
+    } catch (err) {
+      Logger.error(err as Error);
+      setLoading(false);
+      setError(`Failed to delete item: ${(err as Error).message}`);
+    }
+  }, [service, list, loadItems]);
+
+  const renderPlaceholder = (): React.ReactElement => {
     return (
       <div className={styles.placeholder} data-automation-id={`dataDemo-placeholder-${endpoint}`}>
         <Stack tokens={stackTokens} horizontalAlign="center">
@@ -130,12 +177,9 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         </Stack>
       </div>
     );
-  }
+  };
 
-  private _renderCrudPanel(): React.ReactElement {
-    const { list } = this.props;
-    const { items, loading, error, showDialog, editItem, isEditing, service } = this.state;
-
+  const renderCrudPanel = (): React.ReactElement => {
     if (!service || !list) {
       return (
         <Spinner size={SpinnerSize.large} label="Initializing..." data-automation-id="dataDemo-spinner-init" />
@@ -157,14 +201,14 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
               title="Edit"
               ariaLabel="Edit item"
               data-automation-id={`dataDemo-button-edit-${item.Id}`}
-              onClick={() => this._onEditItem(item)}
+              onClick={() => onEditItem(item)}
             />
             <IconButton
               iconProps={{ iconName: 'Delete' }}
               title="Delete"
               ariaLabel="Delete item"
               data-automation-id={`dataDemo-button-delete-${item.Id}`}
-              onClick={() => this._onDeleteItem(item.Id!)}
+              onClick={() => onDeleteItem(item.Id!)}
             />
           </Stack>
         )
@@ -176,7 +220,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         {error && (
           <MessageBar
             messageBarType={MessageBarType.error}
-            onDismiss={() => this.setState({ error: undefined })}
+            onDismiss={() => setError(undefined)}
             data-automation-id="dataDemo-message-error"
           >
             {error}
@@ -187,13 +231,13 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
           <PrimaryButton
             text="Add Item"
             iconProps={{ iconName: 'Add' }}
-            onClick={this._onAddItem}
+            onClick={onAddItem}
             data-automation-id="dataDemo-button-add"
           />
           <DefaultButton
             text="Refresh"
             iconProps={{ iconName: 'Refresh' }}
-            onClick={() => this._loadItems()}
+            onClick={() => loadItems(service, list)}
             data-automation-id="dataDemo-button-refresh"
           />
         </Stack>
@@ -212,7 +256,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
         <Dialog
           hidden={!showDialog}
-          onDismiss={this._onCloseDialog}
+          onDismiss={onCloseDialog}
           dialogContentProps={{
             type: DialogType.normal,
             title: isEditing ? 'Edit Item' : 'Add Item'
@@ -223,7 +267,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
             <TextField
               label="Title"
               value={editItem.Title}
-              onChange={(_e, val) => this.setState({ editItem: { ...editItem, Title: val || '' } })}
+              onChange={(_e, val) => setEditItem({ ...editItem, Title: val || '' })}
               required
               data-automation-id="dataDemo-input-title"
             />
@@ -231,154 +275,57 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
           <DialogFooter>
             <PrimaryButton
               text="Save"
-              onClick={this._onSaveItem}
+              onClick={onSaveItem}
               data-automation-id="dataDemo-button-save"
             />
             <DefaultButton
               text="Cancel"
-              onClick={this._onCloseDialog}
+              onClick={onCloseDialog}
               data-automation-id="dataDemo-button-cancel"
             />
           </DialogFooter>
         </Dialog>
       </>
     );
-  }
+  };
 
-  private _onTransportChanged = (item?: PivotItem): void => {
-    if (!item) return;
-    const transport = item.props.itemKey as Transport;
-    this.setState({ transport }, () => {
-      if (PLACEHOLDER_ENDPOINTS.indexOf(this.state.endpoint) < 0) {
-        this._initServiceAndLoad().catch(() => { /* handled internally */ });
-      }
-    });
-  }
+  return (
+    <div className={styles.dataDemo} data-automation-id="dataDemo-container-root">
+      <Stack tokens={stackTokens}>
+        <div className={styles.pivotWrapper}>
+          <Pivot
+            selectedKey={transport}
+            onLinkClick={onTransportChanged}
+            data-automation-id="dataDemo-pivot-transport"
+          >
+            <PivotItem headerText="REST" itemKey="REST" />
+            <PivotItem headerText="PnPjs" itemKey="PnPjs" />
+          </Pivot>
+        </div>
 
-  private _onEndpointChanged = (item?: PivotItem): void => {
-    if (!item) return;
-    const endpoint = item.props.itemKey as Endpoint;
-    this.setState({ endpoint }, () => {
-      if (PLACEHOLDER_ENDPOINTS.indexOf(endpoint) < 0) {
-        this._initServiceAndLoad().catch(() => { /* handled internally */ });
-      }
-    });
-  }
+        <div className={styles.pivotWrapper}>
+          <Pivot
+            selectedKey={endpoint}
+            onLinkClick={onEndpointChanged}
+            data-automation-id="dataDemo-pivot-endpoint"
+          >
+            <PivotItem headerText="SharePoint" itemKey="SharePoint" />
+            <PivotItem headerText="MS Graph" itemKey="MS Graph" />
+            <PivotItem headerText="Anonymous" itemKey="Anonymous" />
+            <PivotItem headerText="Simple Auth" itemKey="Simple Auth" />
+            <PivotItem headerText="Entra App" itemKey="Entra App" />
+          </Pivot>
+        </div>
 
-  private async _initServiceAndLoad(): Promise<void> {
-    const { factory, site, list } = this.props;
-    const { transport, endpoint } = this.state;
-    const isAnonymous = endpoint === 'Anonymous';
-
-    if (!factory || (!isAnonymous && (!site || !list))) {
-      this.setState({ service: undefined, items: [] });
-      return;
-    }
-
-    this.setState({ loading: true, error: undefined });
-
-    try {
-      const service = await factory.create(transport, endpoint, site ?? { url: '', id: '' });
-      this.setState({ service, loading: false }, () => {
-        if (!isAnonymous) {
-          this._loadItems().catch(() => { /* handled in _loadItems */ });
+        {PLACEHOLDER_ENDPOINTS.indexOf(endpoint) >= 0
+          ? renderPlaceholder()
+          : isAnonymous && service
+            ? <JokePanel service={service} />
+            : renderCrudPanel()
         }
-      });
-    } catch (err) {
-      Logger.error(err as Error);
-      this.setState({
-        loading: false,
-        error: `Failed to initialize service: ${(err as Error).message}`
-      });
-    }
-  }
+      </Stack>
+    </div>
+  );
+};
 
-  private async _loadItems(): Promise<void> {
-    const { list } = this.props;
-    const { service, endpoint } = this.state;
-    const isAnonymous = endpoint === 'Anonymous';
-    if (!service || (!isAnonymous && !list)) {
-      return;
-    }
-
-    this.setState({ loading: true, error: undefined });
-
-    try {
-      const items = await service.getItems(list ?? { title: '', id: '' });
-      this.setState({ items, loading: false });
-    } catch (err) {
-      Logger.error(err as Error);
-      this.setState({
-        loading: false,
-        error: `Failed to load items: ${(err as Error).message}`
-      });
-    }
-  }
-
-  private _onAddItem = (): void => {
-    this.setState({
-      showDialog: true,
-      editItem: { Title: '' },
-      isEditing: false
-    });
-  }
-
-  private _onEditItem = (item: IListItem): void => {
-    this.setState({
-      showDialog: true,
-      editItem: { ...item },
-      isEditing: true
-    });
-  }
-
-  private _onCloseDialog = (): void => {
-    this.setState({ showDialog: false });
-  }
-
-  private _onSaveItem = async (): Promise<void> => {
-    const { list } = this.props;
-    const { service, editItem, isEditing } = this.state;
-
-    if (!service || !list) {
-      return;
-    }
-
-    this.setState({ showDialog: false, loading: true });
-
-    try {
-      if (isEditing && editItem.Id) {
-        await service.updateItem(list, editItem.Id, editItem);
-      } else {
-        await service.createItem(list, editItem);
-      }
-      await this._loadItems();
-    } catch (err) {
-      Logger.error(err as Error);
-      this.setState({
-        loading: false,
-        error: `Failed to save item: ${(err as Error).message}`
-      });
-    }
-  }
-
-  private _onDeleteItem = async (id: number): Promise<void> => {
-    const { list } = this.props;
-    const { service } = this.state;
-    if (!service || !list) {
-      return;
-    }
-
-    this.setState({ loading: true });
-
-    try {
-      await service.deleteItem(list, id);
-      await this._loadItems();
-    } catch (err) {
-      Logger.error(err as Error);
-      this.setState({
-        loading: false,
-        error: `Failed to delete item: ${(err as Error).message}`
-      });
-    }
-  }
-}
+export default DataDemo;
