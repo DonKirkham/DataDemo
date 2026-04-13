@@ -1,0 +1,24 @@
+/* ABOUTME: Styles for the JokePanel component. */
+/* ABOUTME: Centers joke text with delayed punchline in primary theme color. */
+
+.jokePanel {
+  padding: 40px 20px;
+  text-align: center;
+
+  .setup {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: "[theme:bodyText, default: #323130]";
+    color: var(--bodyText);
+  }
+
+  .punchline {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: "[theme:themePrimary, default: #0078d4]";
+    color: var(--themePrimary);
+  }
+}

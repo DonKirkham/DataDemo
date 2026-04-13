@@ -7,6 +7,7 @@ import type { IDataDemoProps } from './IDataDemoProps';
 import { IListItem } from '../models/IListItem';
 import { ISpService } from '../services/ISpService';
 import { Transport, Endpoint } from '../services/SpServiceFactory';
+import JokePanel from './JokePanel';
 import { Logger } from '@pnp/logging';
 import {
   DetailsList,
@@ -40,7 +41,6 @@ interface IDataDemoState {
   transport: Transport;
   endpoint: Endpoint;
   service: ISpService | undefined;
-  showPunchline: boolean;
 }
 
 const stackTokens: IStackTokens = { childrenGap: 10 };
@@ -48,7 +48,6 @@ const stackTokens: IStackTokens = { childrenGap: 10 };
 const PLACEHOLDER_ENDPOINTS: Endpoint[] = ['Simple Auth', 'Entra App'];
 
 export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoState> {
-  private _punchlineTimer: number | undefined;
 
   constructor(props: IDataDemoProps) {
     super(props);
@@ -61,8 +60,7 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       isEditing: false,
       transport: 'REST',
       endpoint: 'SharePoint',
-      service: undefined,
-      showPunchline: false
+      service: undefined
     };
   }
 
@@ -77,12 +75,6 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
       prevProps.factory !== this.props.factory
     ) {
       this._initServiceAndLoad().catch(() => { /* handled internally */ });
-    }
-  }
-
-  public componentWillUnmount(): void {
-    if (this._punchlineTimer) {
-      window.clearTimeout(this._punchlineTimer);
     }
   }
 
@@ -119,8 +111,8 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
           {PLACEHOLDER_ENDPOINTS.indexOf(endpoint) >= 0
             ? this._renderPlaceholder()
-            : endpoint === 'Anonymous'
-              ? this._renderJokePanel()
+            : endpoint === 'Anonymous' && this.state.service
+              ? <JokePanel service={this.state.service} />
               : this._renderCrudPanel()
           }
         </Stack>
@@ -138,68 +130,6 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
         </Stack>
       </div>
     );
-  }
-
-  private _renderJokePanel(): React.ReactElement {
-    const { items, loading, error, service, showPunchline } = this.state;
-    const setup = items.length > 0 ? items[0].Title : '';
-    const punchline = items.length > 1 ? items[1].Title : '';
-
-    if (!service) {
-      return (
-        <Spinner size={SpinnerSize.large} label="Initializing..." data-automation-id="dataDemo-spinner-init" />
-      );
-    }
-
-    return (
-      <>
-        {error && (
-          <MessageBar
-            messageBarType={MessageBarType.error}
-            onDismiss={() => this.setState({ error: undefined })}
-            data-automation-id="dataDemo-message-error"
-          >
-            {error}
-          </MessageBar>
-        )}
-
-        <div className={styles.jokePanel} data-automation-id="dataDemo-container-joke">
-          {loading ? (
-            <Spinner size={SpinnerSize.large} label="Fetching joke..." data-automation-id="dataDemo-spinner-loading" />
-          ) : (
-            <>
-              <div className={styles.jokeSetup} data-automation-id="dataDemo-text-setup">{setup}</div>
-              {showPunchline && (
-                <div className={styles.jokePunchline} data-automation-id="dataDemo-text-punchline">{punchline}</div>
-              )}
-            </>
-          )}
-        </div>
-
-        <Stack horizontalAlign="center">
-          <DefaultButton
-            text="Next Joke"
-            iconProps={{ iconName: 'Refresh' }}
-            onClick={() => this._loadJoke()}
-            data-automation-id="dataDemo-button-nextjoke"
-          />
-        </Stack>
-      </>
-    );
-  }
-
-  private _loadJoke(): void {
-    if (this._punchlineTimer) {
-      window.clearTimeout(this._punchlineTimer);
-      this._punchlineTimer = undefined;
-    }
-    this.setState({ showPunchline: false });
-
-    this._loadItems().then(() => {
-      this._punchlineTimer = window.setTimeout(() => {
-        this.setState({ showPunchline: true });
-      }, 3000);
-    }).catch(() => { /* handled in _loadItems */ });
   }
 
   private _renderCrudPanel(): React.ReactElement {
@@ -349,10 +279,8 @@ export default class DataDemo extends React.Component<IDataDemoProps, IDataDemoS
 
     try {
       const service = await factory.create(transport, endpoint, site ?? { url: '', id: '' });
-      this.setState({ service }, () => {
-        if (isAnonymous) {
-          this._loadJoke();
-        } else {
+      this.setState({ service, loading: false }, () => {
+        if (!isAnonymous) {
           this._loadItems().catch(() => { /* handled in _loadItems */ });
         }
       });
