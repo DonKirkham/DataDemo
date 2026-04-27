@@ -12,6 +12,8 @@ import { GraphSpService } from './GraphSpService';
 import { PnPGraphService } from './PnPGraphService';
 import { AnonymousRestService } from './AnonymousRestService';
 import { AnonymousPnPService } from './AnonymousPnPService';
+import { IProvisioningService } from './IProvisioningService';
+import { ProvisioningService } from './ProvisioningService';
 
 export type Transport = 'REST' | 'PnPjs';
 export type Endpoint = 'SharePoint' | 'MS Graph' | 'Anonymous' | 'Simple Auth' | 'Entra App';
@@ -64,5 +66,12 @@ export class SpServiceFactory {
 
     Logger.write(`[DataDemo] SpServiceFactory: unsupported combination ${transport} + ${endpoint}`, LogLevel.Error);
     throw new Error(`Unsupported combination: ${transport} + ${endpoint}`);
+  }
+
+  public getProvisioningService(site: ISiteInfo): IProvisioningService {
+    Logger.write(`[DataDemo] SpServiceFactory.getProvisioningService for site=${site.url}`, LogLevel.Info);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sp = spfi(site.url).using(spSPFx(this.context as any));
+    return new ProvisioningService(sp, site.url);
   }
 }
