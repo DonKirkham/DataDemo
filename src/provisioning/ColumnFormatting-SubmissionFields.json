@@ -1,0 +1,14 @@
+{
+  "_comment": "Apply this JSON to BOTH sfSubmissionStatus and sfSubmittedDate columns via List Settings > Column > Edit > Column formatting. Hides them unless sfCallPhase = 'Close'.",
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "style": {
+    "display": "=if([$sfCallPhase] == 'Close', 'block', 'none')"
+  },
+  "children": [
+    {
+      "elmType": "span",
+      "txtContent": "@currentField"
+    }
+  ]
+}

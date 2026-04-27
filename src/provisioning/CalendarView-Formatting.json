@@ -1,0 +1,39 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/calendar-formatting.schema.json",
+  "schema": "calendar",
+  "additionalEventClass": "=if([$ContentType] == 'SF Conference', 'sp-css-backgroundColor-BgCornflowerBlue sp-css-color-CornflowerBlueFont', if([$ContentType] == 'SF Call Milestone' && [$sfCallPhase] == 'Open', 'sp-css-backgroundColor-BgMintGreen sp-css-color-MintGreenFont', if([$ContentType] == 'SF Call Milestone' && [$sfCallPhase] == 'Close' && [$sfSubmissionStatus] == 'Planned' && Number([$EventDate]) < @now, 'sp-css-backgroundColor-BgDustRose sp-css-color-DustRoseFont', if([$ContentType] == 'SF Call Milestone' && [$sfCallPhase] == 'Close', 'sp-css-backgroundColor-BgGold sp-css-color-GoldFont', if([$ContentType] == 'SF Session' && [$sfSessionType] == 'Workshop', 'sp-css-backgroundColor-BgPeach sp-css-color-PeachFont', 'sp-css-backgroundColor-BgLavender sp-css-color-LavenderFont')))))",
+  "calendarPreviewProperties": [
+    {
+      "label": "Type",
+      "property": "ContentType"
+    },
+    {
+      "label": "Conference",
+      "property": "sfConference"
+    },
+    {
+      "label": "Call Type",
+      "property": "sfCallType"
+    },
+    {
+      "label": "Call Phase",
+      "property": "sfCallPhase"
+    },
+    {
+      "label": "Status",
+      "property": "sfSubmissionStatus"
+    },
+    {
+      "label": "Submitted",
+      "property": "sfSubmittedDate"
+    },
+    {
+      "label": "Session Type",
+      "property": "sfSessionType"
+    },
+    {
+      "label": "Website",
+      "property": "sfWebsite"
+    }
+  ]
+}
