@@ -4,7 +4,8 @@
 import * as React from 'react';
 import styles from './JokePanel.module.scss';
 import { ISpService, IListIdentifier } from '../services/ISpService';
-import { Logger } from '@pnp/logging';
+import { Logger, LogLevel } from '@pnp/logging';
+import { logDebug } from '../services/logDebug';
 import {
   DefaultButton,
   MessageBar,
@@ -29,6 +30,8 @@ const JokePanel: React.FC<IJokePanelProps> = ({ service }) => {
   const timerRef = React.useRef<number | undefined>(undefined);
 
   const loadJoke = React.useCallback((): void => {
+    Logger.write('[DataDemo] JokePanel.loadJoke: requesting joke', LogLevel.Info);
+
     if (timerRef.current) {
       window.clearTimeout(timerRef.current);
       timerRef.current = undefined;
@@ -39,14 +42,17 @@ const JokePanel: React.FC<IJokePanelProps> = ({ service }) => {
     setShowPunchline(false);
 
     service.getItems(DUMMY_LIST).then((items) => {
+      logDebug('JokePanel.loadJoke result:', items);
       setSetup(items.length > 0 ? items[0].Title : '');
       setPunchline(items.length > 1 ? items[1].Title : '');
       setLoading(false);
 
       timerRef.current = window.setTimeout(() => {
+        Logger.write('[DataDemo] JokePanel: revealing punchline', LogLevel.Verbose);
         setShowPunchline(true);
       }, 3000);
     }).catch((err: Error) => {
+      Logger.write(`[DataDemo] JokePanel.loadJoke failed: ${err.message}`, LogLevel.Error);
       Logger.error(err);
       setLoading(false);
       setError(`Failed to fetch joke: ${err.message}`);
@@ -54,8 +60,10 @@ const JokePanel: React.FC<IJokePanelProps> = ({ service }) => {
   }, [service]);
 
   React.useEffect(() => {
+    Logger.write('[DataDemo] JokePanel mounted', LogLevel.Info);
     loadJoke();
     return () => {
+      Logger.write('[DataDemo] JokePanel unmounting', LogLevel.Verbose);
       if (timerRef.current) {
         window.clearTimeout(timerRef.current);
       }

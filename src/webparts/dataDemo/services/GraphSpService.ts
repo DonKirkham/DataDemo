@@ -2,6 +2,8 @@
 // ABOUTME: No additional packages required — uses the built-in Graph client from SPFx context.
 
 import { MSGraphClientV3 } from '@microsoft/sp-http';
+import { Logger, LogLevel } from '@pnp/logging';
+import { logDebug } from './logDebug';
 import { IListItem } from '../models/IListItem';
 import { ISpService, IListIdentifier } from './ISpService';
 
@@ -26,24 +28,31 @@ export class GraphSpService implements ISpService {
   }
 
   public async getItems(list: IListIdentifier): Promise<IListItem[]> {
+    Logger.write(`[DataDemo] GraphSpService.getItems: list=${list.id}`, LogLevel.Info);
     const response = await this.graphClient
       .api(`/sites/${this.siteId}/lists/${list.id}/items?expand=fields(select=Title)`)
       .version('v1.0')
       .get();
 
-    return (response.value as IGraphListItem[]).map((item) => this.toListItem(item));
+    const result = (response.value as IGraphListItem[]).map((item) => this.toListItem(item));
+    logDebug('GraphSpService.getItems result:', result);
+    return result;
   }
 
   public async getItem(list: IListIdentifier, itemId: number): Promise<IListItem> {
+    Logger.write(`[DataDemo] GraphSpService.getItem: list=${list.id}, id=${itemId}`, LogLevel.Info);
     const response = await this.graphClient
       .api(`/sites/${this.siteId}/lists/${list.id}/items/${itemId}?expand=fields(select=Title)`)
       .version('v1.0')
       .get();
 
-    return this.toListItem(response as IGraphListItem);
+    const result = this.toListItem(response as IGraphListItem);
+    logDebug('GraphSpService.getItem result:', result);
+    return result;
   }
 
   public async createItem(list: IListIdentifier, item: IListItem): Promise<IListItem> {
+    Logger.write(`[DataDemo] GraphSpService.createItem: list=${list.id}`, LogLevel.Info);
     const response = await this.graphClient
       .api(`/sites/${this.siteId}/lists/${list.id}/items`)
       .version('v1.0')
@@ -53,10 +62,13 @@ export class GraphSpService implements ISpService {
         }
       });
 
-    return this.toListItem(response as IGraphListItem);
+    const result = this.toListItem(response as IGraphListItem);
+    logDebug('GraphSpService.createItem result:', result);
+    return result;
   }
 
   public async updateItem(list: IListIdentifier, itemId: number, item: IListItem): Promise<IListItem> {
+    Logger.write(`[DataDemo] GraphSpService.updateItem: list=${list.id}, id=${itemId}`, LogLevel.Info);
     await this.graphClient
       .api(`/sites/${this.siteId}/lists/${list.id}/items/${itemId}/fields`)
       .version('v1.0')
@@ -64,13 +76,17 @@ export class GraphSpService implements ISpService {
         Title: item.Title
       });
 
-    return { ...item, Id: itemId };
+    const result = { ...item, Id: itemId };
+    logDebug('GraphSpService.updateItem result:', result);
+    return result;
   }
 
   public async deleteItem(list: IListIdentifier, itemId: number): Promise<void> {
+    Logger.write(`[DataDemo] GraphSpService.deleteItem: list=${list.id}, id=${itemId}`, LogLevel.Info);
     await this.graphClient
       .api(`/sites/${this.siteId}/lists/${list.id}/items/${itemId}`)
       .version('v1.0')
       .delete();
+    logDebug('GraphSpService.deleteItem deleted id:', itemId);
   }
 }

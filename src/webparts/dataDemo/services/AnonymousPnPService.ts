@@ -3,6 +3,8 @@
 
 import { Queryable } from '@pnp/queryable';
 import { BrowserFetch, JSONParse, ResolveOnData, RejectOnError } from '@pnp/queryable';
+import { Logger, LogLevel } from '@pnp/logging';
+import { logDebug } from './logDebug';
 import { IListItem } from '../models/IListItem';
 import { ISpService, IListIdentifier } from './ISpService';
 
@@ -32,8 +34,10 @@ export class AnonymousPnPService implements ISpService {
   }
 
   public async getItems(_list: IListIdentifier): Promise<IListItem[]> {
+    Logger.write('[DataDemo] AnonymousPnPService.getItems: fetching random joke', LogLevel.Info);
     const q = this.createQueryable('random_joke');
     const joke: IJokeResponse = await q();
+    logDebug('AnonymousPnPService.getItems result:', joke);
     return [
       { Id: joke.id, Title: joke.setup },
       { Id: joke.id, Title: joke.punchline }
@@ -41,8 +45,10 @@ export class AnonymousPnPService implements ISpService {
   }
 
   public async getItem(_list: IListIdentifier, _itemId: number): Promise<IListItem> {
+    Logger.write('[DataDemo] AnonymousPnPService.getItem: fetching random joke', LogLevel.Info);
     const q = this.createQueryable('random_joke');
     const joke: IJokeResponse = await q();
+    logDebug('AnonymousPnPService.getItem result:', joke);
     return {
       Id: joke.id,
       Title: `${joke.setup} — ${joke.punchline}`

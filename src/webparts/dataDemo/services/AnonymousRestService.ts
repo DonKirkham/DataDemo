@@ -2,6 +2,8 @@
 // ABOUTME: Fetches jokes from a public API to demonstrate unauthenticated HTTP requests.
 
 import { HttpClient, HttpClientResponse } from '@microsoft/sp-http';
+import { Logger, LogLevel } from '@pnp/logging';
+import { logDebug } from './logDebug';
 import { IListItem } from '../models/IListItem';
 import { ISpService, IListIdentifier } from './ISpService';
 
@@ -18,6 +20,7 @@ export class AnonymousRestService implements ISpService {
   constructor(private httpClient: HttpClient) {}
 
   public async getItems(_list: IListIdentifier): Promise<IListItem[]> {
+    Logger.write('[DataDemo] AnonymousRestService.getItems: fetching random joke', LogLevel.Info);
     const response: HttpClientResponse = await this.httpClient.get(
       `${API_BASE}/random_joke`,
       HttpClient.configurations.v1
@@ -28,6 +31,7 @@ export class AnonymousRestService implements ISpService {
     }
 
     const joke: IJokeResponse = await response.json();
+    logDebug('AnonymousRestService.getItems result:', joke);
     return [
       { Id: joke.id, Title: joke.setup },
       { Id: joke.id, Title: joke.punchline }
@@ -35,6 +39,7 @@ export class AnonymousRestService implements ISpService {
   }
 
   public async getItem(_list: IListIdentifier, _itemId: number): Promise<IListItem> {
+    Logger.write('[DataDemo] AnonymousRestService.getItem: fetching random joke', LogLevel.Info);
     const response: HttpClientResponse = await this.httpClient.get(
       `${API_BASE}/random_joke`,
       HttpClient.configurations.v1
@@ -45,6 +50,7 @@ export class AnonymousRestService implements ISpService {
     }
 
     const joke: IJokeResponse = await response.json();
+    logDebug('AnonymousRestService.getItem result:', joke);
     return {
       Id: joke.id,
       Title: `${joke.setup} — ${joke.punchline}`

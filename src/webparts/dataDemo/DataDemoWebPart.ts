@@ -46,7 +46,10 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
     const list = this.properties.list;
     const hasSite = this.properties.sites && this.properties.sites.length > 0;
 
+    Logger.write(`[DataDemo] render: hasSite=${hasSite}, list=${list?.title ?? 'none'}`, LogLevel.Verbose);
+
     if (!hasSite || !list) {
+      Logger.write('[DataDemo] render: showing configuration placeholder', LogLevel.Info);
       const element = React.createElement(Placeholder, {
         iconName: 'Edit',
         iconText: 'Configure Data Demo',
@@ -61,6 +64,8 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
     const site = this.properties.sites[0];
     const listIdentifier: IListIdentifier = { id: list.id, title: list.title };
 
+    Logger.write(`[DataDemo] render: mounting DataDemo component for site=${site.url}, list=${listIdentifier.title}`, LogLevel.Info);
+
     const element: React.ReactElement<IDataDemoProps> = React.createElement(
       DataDemo,
       {
@@ -74,10 +79,13 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
   }
 
   protected onInit(): Promise<void> {
-    Logger.subscribe(ConsoleListener('DataDemo'));
+    Logger.subscribe(ConsoleListener());
     Logger.activeLogLevel = this.properties.enhancedLogging ? LogLevel.Verbose : LogLevel.Warning;
 
+    Logger.write(`[DataDemo] onInit: starting (enhancedLogging=${this.properties.enhancedLogging ? 'on' : 'off'})`, LogLevel.Info);
+
     if (!this.properties.sites || this.properties.sites.length === 0) {
+      Logger.write(`[DataDemo] onInit: defaulting site to current web ${this.context.pageContext.web.absoluteUrl}`, LogLevel.Verbose);
       this.properties.sites = [{
         url: this.context.pageContext.web.absoluteUrl,
         title: this.context.pageContext.web.title,
@@ -85,9 +93,8 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
       }];
     }
 
-    Logger.write('Web part initialized', LogLevel.Info);
-
     this._factory = new SpServiceFactory(this.context);
+    Logger.write('[DataDemo] onInit: web part initialized, service factory ready', LogLevel.Info);
     return Promise.resolve();
   }
 
@@ -108,6 +115,7 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
   }
 
   protected onDispose(): void {
+    Logger.write('[DataDemo] onDispose: unmounting web part', LogLevel.Info);
     ReactDom.unmountComponentAtNode(this.domElement);
   }
 
@@ -183,14 +191,17 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
   protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
     super.onPropertyPaneFieldChanged(propertyPath, oldValue, newValue);
 
+    Logger.write(`[DataDemo] property pane changed: ${propertyPath}`, LogLevel.Verbose);
+
     if (propertyPath === 'sites') {
+      Logger.write('[DataDemo] site changed, clearing selected list', LogLevel.Info);
       this.properties.list = undefined;
       this.context.propertyPane.refresh();
     }
 
     if (propertyPath === 'enhancedLogging') {
       Logger.activeLogLevel = newValue ? LogLevel.Verbose : LogLevel.Warning;
-      Logger.write(`Enhanced logging ${newValue ? 'enabled' : 'disabled'}`, LogLevel.Info);
+      Logger.write(`[DataDemo] enhanced logging ${newValue ? 'enabled' : 'disabled'}`, LogLevel.Info);
     }
 
     // includeListTitleAndUrl returns an IPropertyFieldList object — store it directly

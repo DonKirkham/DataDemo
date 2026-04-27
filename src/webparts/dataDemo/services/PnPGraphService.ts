@@ -5,6 +5,8 @@ import { GraphFI } from '@pnp/graph';
 import '@pnp/graph/sites';
 import '@pnp/graph/lists';
 import '@pnp/graph/list-item';
+import { Logger, LogLevel } from '@pnp/logging';
+import { logDebug } from './logDebug';
 import { IListItem } from '../models/IListItem';
 import { ISpService, IListIdentifier } from './ISpService';
 
@@ -20,6 +22,7 @@ export class PnPGraphService implements ISpService {
   ) {}
 
   public async getItems(list: IListIdentifier): Promise<IListItem[]> {
+    Logger.write(`[DataDemo] PnPGraphService.getItems: list=${list.id}`, LogLevel.Info);
     const items = await this.graph.sites
       .getById(this.siteId)
       .lists
@@ -28,13 +31,16 @@ export class PnPGraphService implements ISpService {
       .expand('fields')();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return items.map((item: any) => ({
+    const result = items.map((item: any) => ({
       Id: parseInt(item.id, 10),
       Title: (item.fields as IGraphFields)?.Title || ''
     }));
+    logDebug('PnPGraphService.getItems result:', result);
+    return result;
   }
 
   public async getItem(list: IListIdentifier, itemId: number): Promise<IListItem> {
+    Logger.write(`[DataDemo] PnPGraphService.getItem: list=${list.id}, id=${itemId}`, LogLevel.Info);
     const item = await this.graph.sites
       .getById(this.siteId)
       .lists
@@ -45,13 +51,16 @@ export class PnPGraphService implements ISpService {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fields = (item as any).fields as IGraphFields;
-    return {
+    const result = {
       Id: itemId,
       Title: fields?.Title || ''
     };
+    logDebug('PnPGraphService.getItem result:', result);
+    return result;
   }
 
   public async createItem(list: IListIdentifier, item: IListItem): Promise<IListItem> {
+    Logger.write(`[DataDemo] PnPGraphService.createItem: list=${list.id}`, LogLevel.Info);
     // Graph API expects fields nested inside the request body.
     // FieldValueSet is typed as empty in MS Graph types, so we cast.
     const result = await this.graph.sites
@@ -62,13 +71,16 @@ export class PnPGraphService implements ISpService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .add({ fields: { Title: item.Title } } as any);
 
-    return {
+    const created = {
       Id: parseInt(result.id, 10),
       Title: item.Title
     };
+    logDebug('PnPGraphService.createItem result:', created);
+    return created;
   }
 
   public async updateItem(list: IListIdentifier, itemId: number, item: IListItem): Promise<IListItem> {
+    Logger.write(`[DataDemo] PnPGraphService.updateItem: list=${list.id}, id=${itemId}`, LogLevel.Info);
     await this.graph.sites
       .getById(this.siteId)
       .lists
@@ -78,10 +90,13 @@ export class PnPGraphService implements ISpService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({ fields: { Title: item.Title } } as any);
 
-    return { ...item, Id: itemId };
+    const result = { ...item, Id: itemId };
+    logDebug('PnPGraphService.updateItem result:', result);
+    return result;
   }
 
   public async deleteItem(list: IListIdentifier, itemId: number): Promise<void> {
+    Logger.write(`[DataDemo] PnPGraphService.deleteItem: list=${list.id}, id=${itemId}`, LogLevel.Info);
     await this.graph.sites
       .getById(this.siteId)
       .lists
@@ -89,5 +104,6 @@ export class PnPGraphService implements ISpService {
       .items
       .getById(itemId.toString())
       .delete();
+    logDebug('PnPGraphService.deleteItem deleted id:', itemId);
   }
 }
