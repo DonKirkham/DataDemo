@@ -6,10 +6,7 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneToggle,
-  PropertyPaneButton,
-  PropertyPaneButtonType,
-  PropertyPaneLabel
+  PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -44,13 +41,14 @@ export interface IDataDemoWebPartProps {
 export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebPartProps> {
 
   private _factory: SpServiceFactory | undefined;
-  private _provisioningStatus: string = '';
 
   public render(): void {
     const list = this.properties.list;
     const hasSite = this.properties.sites && this.properties.sites.length > 0;
 
     Logger.write(`[DataDemo] render: hasSite=${hasSite}, list=${list?.title ?? 'none'}`, LogLevel.Verbose);
+
+    ReactDom.unmountComponentAtNode(this.domElement);
 
     if (!hasSite || !list) {
       Logger.write('[DataDemo] render: showing configuration placeholder', LogLevel.Info);
@@ -185,27 +183,6 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
                   offText: 'Off'
                 })
               ]
-            },
-            {
-              groupName: 'Schema',
-              groupFields: [
-                PropertyPaneLabel('schemaInfo', {
-                  text: 'Provision the Conference Events list and content types on the selected site. Safe to run more than once.'
-                }),
-                PropertyPaneButton('provisionSchema', {
-                  text: 'Provision Conference Events list',
-                  buttonType: PropertyPaneButtonType.Primary,
-                  disabled: !this._getSiteUrl(),
-                  onClick: () => {
-                    this._onProvisionClicked().catch(err => {
-                      Logger.write(`[DataDemo] provision: unhandled - ${err}`, LogLevel.Error);
-                    });
-                  }
-                }),
-                PropertyPaneLabel('schemaStatus', {
-                  text: this._provisioningStatus || ' '
-                })
-              ]
             }
           ]
         }
@@ -241,39 +218,5 @@ export default class DataDemoWebPart extends BaseClientSideWebPart<IDataDemoWebP
     }
 
     this.render();
-  }
-
-  private async _onProvisionClicked(): Promise<void> {
-    if (!this._factory) {
-      Logger.write('[DataDemo] provision: factory not initialized', LogLevel.Error);
-      return;
-    }
-    const sites = this.properties.sites;
-    if (!sites || sites.length === 0) {
-      Logger.write('[DataDemo] provision: no site selected', LogLevel.Warning);
-      return;
-    }
-
-    const site = sites[0];
-    this._provisioningStatus = 'Provisioning...';
-    this.context.propertyPane.refresh();
-
-    try {
-      Logger.write(`[DataDemo] provision: starting on ${site.url}`, LogLevel.Info);
-      const provisioner = this._factory.getProvisioningService({
-        url: site.url || '',
-        id: site.id || ''
-      });
-      const summary = await provisioner.ensureSchema();
-      this._provisioningStatus =
-        `Done. Created ${summary.created.length} item(s); ${summary.existed.length} already existed.`;
-      Logger.write(`[DataDemo] provision: ${this._provisioningStatus}`, LogLevel.Info);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this._provisioningStatus = `Failed: ${msg}`;
-      Logger.write(`[DataDemo] provision: failed - ${msg}`, LogLevel.Error);
-    } finally {
-      this.context.propertyPane.refresh();
-    }
   }
 }

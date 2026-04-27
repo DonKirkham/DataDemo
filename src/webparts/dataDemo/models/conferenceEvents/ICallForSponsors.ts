@@ -7,8 +7,8 @@ export interface ICallForSponsors {
   Id?: number;
   Title: string;
   ConferenceLookupId?: number;
-  StartDate: string;
-  EndDate: string;
-  SubmittedOn?: string;
-  SubmissionStatus: SubmissionStatus;
+  ConfStartDate: string;
+  ConfEndDate: string;
+  ConfSubmittedOn?: string;
+  ConfSubmissionStatus: SubmissionStatus;
 }
