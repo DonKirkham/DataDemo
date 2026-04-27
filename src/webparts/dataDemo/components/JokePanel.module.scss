@@ -17,10 +17,14 @@
     font-weight: 600;
     line-height: 1.4;
     color: var(--themePrimary, #0078d4);
+    animation: fadeIn 600ms ease-in forwards;
   }
 }
 
 .nextButton {
+  opacity: 0;
+  animation: fadeIn 600ms ease-in 3s forwards;
+
   :global(.ms-Button) {
     background-color: var(--themePrimary, #0078d4);
     color: #ffffff;
@@ -31,5 +35,14 @@
       opacity: 0.9;
       color: #ffffff;
     }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
