@@ -5,7 +5,10 @@
       "Bash(*)",
       "Read(//c/Users/DonKirkham/**)",
       "Read(//d//**)",
-      "WebFetch(domain:official-joke-api.appspot.com)"
+      "WebFetch(domain:*)",
+      "PowerShell(*)",
+      "Read(//tmp/**)",
+      "Read(//d/tmp/**)"
     ]
   }
 }
