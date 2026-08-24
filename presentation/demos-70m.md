@@ -4,7 +4,7 @@
 
 The web part has a two-tier Pivot:
 - **Top tier** = transport (SPFx vs PnPjs)
-- **Second tier** = endpoint (Anonymous, SharePoint, MS Graph (SP), Graph Explorer) — Anonymous leads to match the deck flow
+- **Second tier** = endpoint (Anonymous, SharePoint, MS Graph (SP), and the SPFx-only **MS Graph** tab used for the Graph Explorer detour) — Anonymous leads to match the deck flow. (The **Simple Auth** and **Entra App** tabs also exist for the elevated-API story but aren't part of these scripts.)
 
 Every demo is "click the right Pivot tab, then do the operation." The code differences are in the underlying service classes; the UI is identical so the audience sees the *behavior*, not new chrome.
 
@@ -37,8 +37,9 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 - [ ] Backup screen recording of each demo on local disk in case the tenant flakes
 - [ ] **Joke API smoke-tested** (`https://official-joke-api.appspot.com/random_joke` returns 200) — it's a free public API and goes down sometimes. **This is now the opener** — if it's flaky, swap order: open with SP REST and pull Anonymous to last. Don't discover this on stage.
 - [ ] **Demo 8 baseline state confirmed:**
-  - [ ] In `ServiceFactory.ts`, the `.using(Caching({ store: 'session' }))` line is **commented out** (caching off until 8b)
-  - [ ] In `PnPjsSpService.getItems`, the **single-call** return (above the BATCHED block) is **active**; the BATCHED block below is **commented out**
+  - [ ] **Enhanced logging** toggled **off** in the property pane (so 8a shows the quiet → noisy jump)
+  - [ ] **Use Cache** checkbox **unchecked** on the web part (caching off until 8b)
+  - [ ] Signed-in account has **add/edit/delete** permission on the Speaking Events list (the **Batch Demo** button is disabled without it)
   - [ ] Browser sessionStorage cleared (DevTools → Application → Storage → Clear site data) so 8b shows a real cache miss → hit progression
 
 ---
@@ -86,7 +87,7 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 
 **Steps:**
 
-1. **Open VS Code to `SpfxSpService.ts`.** Highlight lines 17–22 (the URL builder).
+1. **Open VS Code to `SpfxSpService.ts`.** Highlight lines 30–36 (the URL builder in `getItemsNoBatch`).
    - **Say:** "This is the URL we're sending. Memorize the shape — `$select`, `$expand`, `$filter`, `$orderby`. We'll come back to it after the pivot."
 2. **Switch to browser, Network tab.** Click the **Refresh** / **Load** button on the web part.
 3. **Click the request in Network.** Show the URL. Show that it matches the slide.
@@ -119,7 +120,7 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 1. **Open VS Code to `SpfxGraphSpService.ts`.** Highlight lines 22–32.
    - **Point at line 23:** "`expand=fields(select=...)`. **No dollar sign on expand.** If you put `$expand` here, you get an OData parser error. I learned this the hard way."
    - **Point at line 24:** "Datetime literal. Single-quoted ISO string. The legacy `datetime'...'` wrapper from SP REST? Returns a 400 here."
-   - **Point at line 30:** "This `Prefer` header is a fallback for non-indexed columns. **Do not rely on it.** Index your filter and sort columns. The header just delays the failure."
+   - **Point at line 31:** "This `Prefer` header is a fallback for non-indexed columns. **Do not rely on it.** Index your filter and sort columns. The header just delays the failure."
 2. **Browser, Network tab, click Load.**
 3. **Click Pivot to *SPFx* → *MS Graph (SP)*.**
 4. **Click the request.** URL is now `graph.microsoft.com/v1.0/sites/{id}/lists/{id}/items`. Different host, different shape.
@@ -127,7 +128,7 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
    - **Say:** "Every Graph response for a list item is wrapped in `fields`. Your mapper has to unwrap it. That's why we have a separate `graphMappers.ts`."
 6. **(Bonus, if time)** Click Add Event, save. Show the POST. The body has the `{ fields: {...} }` envelope (slide 23). Click Delete on a test item — a real `DELETE` verb (slide 24).
    - **Say:** "Graph's verbs are nicer than SP REST's. Real POST, real DELETE. But the field-shape mapping is unchanged — that's a SharePoint problem, not an HTTP-client problem."
-7. **Click Pivot to *SPFx* → *Graph Explorer*.**
+7. **Click Pivot to *SPFx* → *MS Graph*.** (The SPFx-only tab labeled just "MS Graph" — the Graph Explorer detour, distinct from "MS Graph (SP)".)
 8. **Type `/me` in the path box.** Click Run.
 9. **Show the response.** "This is the same `MSGraphClientV3` we just used for list items. No list, no site, just a path. Use this when you're prototyping."
 10. **Try `/me/messages?$top=3`.** Show the result.
@@ -156,8 +157,8 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 5. **Click the new request in Network.** Show the URL.
 6. **Compare side-by-side.** They should be identical (same `$select`, `$expand`, `$filter`, `$orderby`).
    - **Say:** "Same URL. Same method. Same response. The only thing that changed was the code we wrote to *build* the URL. PnPjs is not magic — it's the URL you'd write anyway, just typed for you."
-7. **Switch to VS Code.** Show the `getItems` method in `PnPjsSpService.ts` (lines 16–24) next to the SPFx version (lines 16–30).
-   - **Count lines aloud:** "13 lines vs 8 lines. No URL string. No `response.ok` check. No `response.json()`. No cast — well, one cast, because we're being paranoid."
+7. **Switch to VS Code.** Show the `getItemsNoBatch` method in `PnPjsSpService.ts` (lines 37–47) next to the SPFx version (lines 29–45).
+   - **Count lines aloud:** "The PnPjs read is one ~8-line chain; the SPFx version is ~13. No URL string. No `response.ok` check. No `response.json()`. No cast — well, one cast, because we're being paranoid."
 
 **Why this is the most important demo:**
 - The audience needs to leave this demo *trusting* that PnPjs isn't doing anything weird. That trust is what makes logging/caching/batching land. If they think it's magic, they think it's risky. It isn't — it's a URL builder.
@@ -200,7 +201,7 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 **Steps:**
 
 1. **Pivot stays at *PnPjs* → *SharePoint*** (carried over from Demo 4).
-2. **Open VS Code to `PnPjsSpService.ts`.** Show the `getItems` chain (lines 16–24).
+2. **Open VS Code to `PnPjsSpService.ts`.** Show the `getItemsNoBatch` chain (lines 37–47).
    - **Say:** "Same `$select`, `$expand`, `$filter`, `$orderby` from the URL we just built by hand. Now it's typed."
 3. **Click Add Event.** Same payload pattern as Demo 2 (Title = "PnPjs Demo Event", future date, etc.).
 4. **Watch Network tab.** Show the POST.
@@ -228,10 +229,10 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 **Steps:**
 
 1. **Click Pivot to *PnPjs* → *MS Graph (SP)*.**
-2. **Open VS Code to `PnPjsGraphSpService.ts`.** Lines 30–43.
+2. **Open VS Code to `PnPjsGraphSpService.ts`.** Lines 57–71 (`getItemsNoBatch`).
 3. **Walk the code:**
-   - **Line 35 (`InjectHeaders`):** "This is how PnPjs adds the `Prefer` header. Composable behavior, no manual `.header()` chain — same `using()` shape you saw in Demo 5's Anonymous service."
-   - **Lines 37–39 (`itemsQuery.query.set`):** "Honesty time. The PnPjs `.expand()` method has a bug — it splits the comma-separated `fields(select=A,B,C)` argument and produces a malformed URL. So we set the raw query string directly. This is in the codebase as a comment somewhere."
+   - **Line 63 (`InjectHeaders`):** "This is how PnPjs adds the `Prefer` header. Composable behavior, no manual `.header()` chain — same `using()` shape you saw in Demo 5's Anonymous service."
+   - **Lines 65–67 (`itemsQuery.query.set`):** "Honesty time. The PnPjs `.expand()` method splits the comma-separated `fields(select=A,B,C)` argument and produces a malformed URL. So we set the raw query string directly instead."
 4. **Browser, click Load.**
 5. **Show the network request.** Same URL shape as Demo 3. Same response shape with the nested `fields`.
 6. **Be honest.**
@@ -247,11 +248,11 @@ The deck (`data.pptx`) leads with Anonymous in both passes — Demo 1 is the Jok
 
 **Time budget:** 6 min total. Budget the segments: 1.5 min logging, 2 min caching, 2.5 min batching.
 
-This demo requires three small code changes you'll make live OR pre-stage as a separate "Upgraded" Pivot tab. **Recommendation:** pre-stage the changes in a feature branch and check out the branch before this demo. Live editing fluent chains under time pressure is asking for trouble.
+No live editing. All three upgrades are already wired and driven from the UI: logging by the **Enhanced logging** property-pane toggle, caching by the **Use Cache** checkbox, batching by the **Batch Demo** button. You show the code in VS Code and drive the behavior from the web part — no HMR roulette under time pressure.
 
 ### 8a — Logging (1.5 min)
 
-Already wired. `@pnp/logging` is wrapped in [utilities/logger.ts](src/webparts/dataDemo/utilities/logger.ts), attached in `onInit`, and the level is driven by an **Enhanced logging** property-pane checkbox. No live editing.
+Already wired. `@pnp/logging` is wrapped in [utilities/logger.ts](src/webparts/dataDemo/utilities/logger.ts), attached in `onInit`, and the level is driven by an **Enhanced logging** property-pane toggle. No live editing.
 
 **Steps:**
 1. **Open browser Console tab** (alongside Network).
@@ -263,48 +264,45 @@ Already wired. `@pnp/logging` is wrapped in [utilities/logger.ts](src/webparts/d
 
 ### 8b — Caching (2 min)
 
-The wiring is already in `ServiceFactory.ts` — the `.using(Caching({ store: 'session' }))` line is there, just commented out. You uncomment one line. No live editing of import statements, no HMR roulette.
+No live editing. Caching is a runtime toggle: the **Use Cache** checkbox in the web part toolbar (shown only on the PnPjs SharePoint / MS Graph (SP) tabs) drives a `useCache` flag that [ServiceFactory.ts:81-90](src/webparts/dataDemo/services/ServiceFactory.ts#L81-L90) reads to add `.using(Caching({ store: 'session' }))` to the SPFI when building the service. Ticking the box rebuilds the service with caching on; leaving it clear runs the same query uncached.
 
 **Steps:**
-1. **Open VS Code to [ServiceFactory.ts:46-50](src/webparts/dataDemo/services/ServiceFactory.ts#L46-L50).** Show the current state — the `.using(Caching(...))` line is commented:
-   ```ts
-   const sp = spfi(site.url)
-     .using(spSPFx(this.context as any))
-     //.using(Caching({ store: 'session' })); // comment out to disable caching
-   ```
-2. **Uncomment the line.** Save. Let HMR refresh.
+1. **Confirm the Pivot is at *PnPjs* → *SharePoint*** and the **Use Cache** checkbox is **unchecked**.
+2. **(Optional) Show the wiring** in [ServiceFactory.ts:81-90](src/webparts/dataDemo/services/ServiceFactory.ts#L81-L90) — the `if (options?.useCache) sp.using(Caching({ store: 'session' }))` block. Same fluent query; caching is just one more behavior composed onto the SPFI.
 3. **Clear the Network tab.**
-4. **Click Refresh on the web part.** Show one request go out.
-5. **Click Refresh again immediately.** Show **zero new requests** — data is back instantly.
-   - **Say (slow it down):** "Watch the Network tab. First click — request goes out. Second click — *nothing*. The data renders instantly because it came from sessionStorage."
-6. **Hard-refresh the browser (Ctrl+F5).** Click Refresh on the web part once more.
-   - **Say:** "Notice — still no network request. That's because we used `store: 'session'`. The default cache is in-memory and dies with the page. Session storage survives a refresh, local storage survives a tab close. Pick the scope that matches your data's freshness budget."
-7. **Show [PnPjsSpService.ts:23-30](src/webparts/dataDemo/services/PnPjsSpService.ts#L23-L30).** Point at the commented `.using(CacheNever())` line on the items query.
-   - **Say:** "When global caching is on but one specific query has to be live — pricing, inventory, anything where stale equals wrong — `CacheNever()` opts that single query out. Composable, per-call, no global state to wrangle."
-8. **(Optional reset)** Re-comment the `.using(Caching(...))` line before moving on, so the next segment isn't reading stale data.
+4. **Check the *Use Cache* box.** The web part rebuilds the service and reloads — show that first request go out.
+5. **Click Refresh on the web part.** Show **zero new requests** — data is back instantly.
+   - **Say (slow it down):** "Watch the Network tab. Box checked, first load — request goes out. Click Refresh — *nothing*. The data renders instantly because it came from sessionStorage."
+6. **Hard-refresh the browser (Ctrl+F5).** With the box still checked, click Refresh on the web part once more.
+   - **Say:** "Notice — still no network request. That's because the service uses `store: 'session'`. The default cache is in-memory and dies with the page. Session storage survives a refresh, local storage survives a tab close. Pick the scope that matches your data's freshness budget."
+7. **(Reset)** **Uncheck *Use Cache*** before moving on, so the batching segment isn't reading stale data.
 
 ### 8c — Batching (2.5 min)
 
-We pivoted away from "Bulk Add 5 writes" — the Speaking Events list isn't big enough for a write-heavy story to land. Instead we batch **paginated reads**: 100 calls of `top(5)/skip(N)` packaged into one `$batch` envelope. Same `sp.batched()` call, same payoff.
+No live editing. Batching runs on demand via the **Batch Demo** button in the web part toolbar (shown only on the PnPjs SharePoint / MS Graph (SP) tabs). It calls `runBatchDemo`, a scripted **create/update/delete lifecycle** — the Speaking Events list isn't big enough for a read-heavy story, so we make the writes the show. Each phase is packaged into one `sp.batched()` `$batch` envelope:
 
-The wiring is in `PnPjsSpService.getItems`, gated by a comment block. You toggle which version runs by flipping which block is commented out. Pre-flight before the demo: make sure the *single-call* version is active so Demos 4, 6, and 7 looked normal.
+- **cleanup** — delete any leftover `SAMPLE:` items from a prior run (1 batch)
+- **create** — add 10 `SAMPLE:` items (1 batch)
+- **update** — append each item's id to its title (1 batch)
+- **delete-odd** — delete the odd-id items, even ids survive (1 batch)
+
+Batch size is fixed at 20 ([DataDemo.tsx:58](src/webparts/dataDemo/components/DataDemo.tsx#L58)), so each ≤10-item phase fits in a single `$batch`. The button needs add/edit/delete permission on the list.
 
 **Steps:**
-1. **Pivot stays at *PnPjs* → *SharePoint*.**
-2. **Open VS Code to [PnPjsSpService.ts:19-59](src/webparts/dataDemo/services/PnPjsSpService.ts#L19-L59).** Show the audience both blocks side-by-side: the single-call return (active) above, the batched block (commented out) below.
-   - **Say:** "These are the same query. The top one runs as one HTTP GET. The bottom one fires 100 paginated GETs of 5 items each, packed into one $batch POST. Watch the network tab as I switch them."
-3. **Comment out the single-call return** (lines 22-31) and **uncomment the batched block** (lines 33-56). Save. Let HMR refresh.
-4. **Clear the Network tab.**
-5. **Click Refresh on the web part.**
-6. **Show the network tab.** Exactly **one** request: `POST /_api/$batch`. No 100 separate gets.
-   - **Say:** "100 page reads. One HTTP request. SharePoint counts requests, not items, when it throttles you — this *is* the throttle escape hatch."
-7. **Click the `$batch` request → Payload tab.** Show the multipart body. Each part is a `GET ...?$top=5&$skip=N` line.
+1. **Pivot stays at *PnPjs* → *SharePoint*.** Make sure **Use Cache** is unchecked (so you see live `$batch` traffic).
+2. **Open VS Code to [PnPjsSpService.ts:79-144](src/webparts/dataDemo/services/PnPjsSpService.ts#L79-L144).** Walk the four phases. Point at the `const [batch, execute] = this.sp.batched({ maxRequests: batchSize })` pattern — one root, many ops, one `execute()`.
+   - **Say:** "Each phase composes its operations onto a batched root, then `execute()` sends them all as one HTTP request. The `Promise.all` on the op handles resolves when the batch comes back."
+3. **Clear the Network tab. Clear the Console** (the run logs each phase via `Logger.info`).
+4. **Click the *Batch Demo* button.**
+5. **Show the Network tab.** A handful of `POST /_api/$batch` requests — **one per phase**, not one per item.
+   - **Say:** "Roughly 30 write operations across the run. SharePoint sees ~4 requests — one per phase. It counts requests, not operations, when it throttles you. This *is* the throttle escape hatch."
+6. **Click a `$batch` request → Payload tab.** Show the multipart body — each part is an inner `POST`/`PATCH`/`DELETE` against the list.
    - **Say:** "PnPjs built this multipart body for you. Doing it by hand is the reason most SPFx code never uses `$batch` even though SharePoint's supported it forever."
-8. **Click the Response tab.** Show the matching multipart response — one inner result per inner request.
-   - **Say:** "Per-page results come back in the same envelope. The pages we fired off as a `Promise.all` resolve when `execute()` returns."
-9. **Compare against SPFx mentally.** Switch to [SpfxSpService.ts:19](src/webparts/dataDemo/services/SpfxSpService.ts#L19) — the commented `&$top=5` line.
-   - **Say:** "On the SPFx-native side there's no batching primitive at all. To page through 500 items in chunks of 5 you'd fire 100 separate XHRs. `Promise.all` parallelizes them client-side, but SharePoint still sees 100 requests. Batching turns that into one."
-10. **(Reset)** Re-comment the batched block and uncomment the single-call return before continuing — otherwise Q&A demos will look weird.
+7. **Show the result summary** rendered under the toolbar: *"N operations in M $batch request(s) (batch size 20) — cleanup …, create 10, update 10, delete-odd …"*. Cross-check it against the Console phase lines.
+   - **Say:** "Per-phase results come back in the same envelope — the summary is built from what `execute()` returned."
+8. **Compare against SPFx mentally.** Switch to [SpfxSpService.ts:33](src/webparts/dataDemo/services/SpfxSpService.ts#L33) — the commented `&$top=5` paging line.
+   - **Say:** "On the SPFx-native side there's no batching primitive at all. Thirty writes would be thirty separate XHRs. `Promise.all` parallelizes them client-side, but SharePoint still sees thirty requests. Batching collapses each phase into one."
+9. **(Reset)** Click **Refresh** to reload the list (the button clears the batch-demo summary). No code to revert — the demo cleans up its own `SAMPLE:` items on the next run.
 
 **Honesty beat at the end:**
 - **Say:** "One caveat. `$batch` is not a database transaction. If page 3 fails, pages 1 and 2 still came back. PnPjs surfaces per-operation results so you can detect partial failures. Plan your retry logic accordingly."
@@ -320,10 +318,10 @@ The wiring is in `PnPjsSpService.getItems`, gated by a comment block. You toggle
 | List doesn't exist / wrong list | Use the property pane (or refresh the page) to re-select. Have the list ID memorized. |
 | Joke API down (Demo 1) | This is the OPENER — don't fumble. "The API's down, which is why we don't write production code against random public services without a fallback." Skip to Demo 2 immediately. Mention the Anonymous beat verbally on the way to slide 15. |
 | Joke API down (Demo 5) | Cut it. Point at slide 29's code, talk through the `Queryable` composition for 30 seconds, move to Demo 6. |
-| Graph permission denied (`/me/messages`) | Stick to `/me` and `/sites/root` in Demo 3. |
-| HMR breaks during live code edits in Demo 8 | Don't fight it — fall back to "this is what the code looks like" in VS Code, point at the slide. |
-| Caching demo doesn't show instant second click | The `.using(Caching({ store: 'session' }))` line in `ServiceFactory.ts` is on the SPFI, not the per-call query. Confirm you uncommented *that* line, not something else. Also: stale sessionStorage from a previous run will mask the "first click → real request" beat — clear site data and retry. |
-| Batching demo still shows N requests | You uncommented the batched block but forgot to comment out the single-call `return` above it — both ran. Re-check that exactly one of the two paths is active in `PnPjsSpService.getItems`. |
+| Graph permission denied (`/me/messages`) | Stick to `/me` and `/sites/root` in the Demo 4 Graph Explorer detour. |
+| Caching demo doesn't show instant second click | Caching lives on the SPFI (`ServiceFactory.ts:81-90`), gated by the **Use Cache** checkbox — confirm the box is actually checked and you're on a PnPjs SharePoint/Graph tab (it doesn't show elsewhere). Also: stale sessionStorage from a previous run will mask the "first load → real request" beat — clear site data and retry. |
+| Batch Demo button is greyed out | It needs add/edit/delete permission on the list. Sign in as an account that has it, or talk through `PnPjsSpService.runBatchDemo` in VS Code and point at the slide. |
+| Batch Demo fires more `$batch` requests than expected | Expected: one `$batch` per phase (cleanup/create/update/delete-odd), so ~3–4 total — cleanup only fires if leftover `SAMPLE:` items exist. If you see far more, batch size may have been lowered from 20 in `DataDemo.tsx:58`; each phase then splits across multiple envelopes. |
 | Audience asks an aggressive "PnPjs is bloat" question mid-demo | "Let's hold that for the wrap slide — slide 39 has the honest answer." Don't get pulled off the demo arc. |
 
 ---
